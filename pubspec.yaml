@@ -1,0 +1,20 @@
+name: bopomofo_workspace
+publish_to: none
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+workspace:
+  - app/bopomofo
+  - packages/domain
+  - packages/phonology
+  - packages/content
+  - packages/persistence
+  - packages/auth
+  - packages/sync
+  - packages/srs
+  - packages/learning_engine
+  - packages/design_system
+
+dev_dependencies:
+  lints: ^5.1.1

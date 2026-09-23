@@ -1,0 +1,122 @@
+name: Platform builds
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install Linux test dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+      - name: Resolve workspace
+        run: dart pub get
+      - name: Resolve Flutter app
+        working-directory: app/bopomofo
+        run: flutter pub get
+      - name: Package analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in packages/domain packages/phonology packages/content packages/srs packages/learning_engine; do
+            (cd $package && dart analyze)
+          done
+          for package in packages/persistence packages/auth packages/sync packages/design_system; do
+            (cd $package && flutter analyze)
+          done
+      - name: Package tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in packages/domain packages/phonology packages/content packages/srs packages/learning_engine; do
+            (cd $package && dart test)
+          done
+          for package in packages/persistence packages/auth packages/sync; do
+            (cd $package && flutter test)
+          done
+      - name: Flutter analyze
+        working-directory: app/bopomofo
+        run: flutter analyze
+      - name: Flutter tests
+        working-directory: app/bopomofo
+        run: flutter test
+      - name: Offline integration test
+        working-directory: app/bopomofo
+        run: flutter test integration_test/offline_learning_test.dart
+      - name: Multi-device integration test
+        working-directory: app/bopomofo
+        run: flutter test integration_test/multi_device_merge_test.dart
+
+  build:
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+            command: flutter build linux --debug
+          - os: ubuntu-latest
+            target: android
+            command: flutter build apk --debug
+          - os: windows-latest
+            target: windows
+            command: flutter build windows --debug
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install Linux desktop build dependencies
+        if: matrix.target == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+      - name: Set up Android SDK
+        if: matrix.target == 'android'
+        uses: android-actions/setup-android@v3
+      - name: Resolve workspace
+        run: dart pub get
+      - name: Resolve app
+        working-directory: app/bopomofo
+        run: flutter pub get
+      - name: Build ${{ matrix.target }}
+        working-directory: app/bopomofo
+        run: ${{ matrix.command }}
+
+  apple-build:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: macos
+            command: flutter build macos --debug
+          - target: ios
+            command: flutter build ios --debug --no-codesign
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve workspace
+        run: dart pub get
+      - name: Resolve app
+        working-directory: app/bopomofo
+        run: flutter pub get
+      - name: Build ${{ matrix.target }}
+        working-directory: app/bopomofo
+        run: ${{ matrix.command }}

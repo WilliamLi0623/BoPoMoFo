@@ -1,0 +1,136 @@
+import 'package:design_system/design_system.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'bootstrap.dart';
+import 'features/dashboard/dashboard_page.dart';
+import 'features/lesson/lesson_page.dart';
+import 'features/onboarding/onboarding_page.dart';
+import 'features/review/review_page.dart';
+import 'features/settings/settings_page.dart';
+import 'features/keyboard/keyboard_page.dart';
+import 'features/account/account_page.dart';
+import 'routes.dart';
+
+class BopomofoApp extends StatefulWidget {
+  const BopomofoApp(
+      {required this.dependencies, this.onExportReady, super.key});
+
+  final AppDependencies dependencies;
+  final ValueChanged<String>? onExportReady;
+
+  @override
+  State<BopomofoApp> createState() => _BopomofoAppState();
+}
+
+class _BopomofoAppState extends State<BopomofoApp> {
+  int _navIndex = 0;
+  String _page = 'onboarding';
+  String _path = 'pinyin';
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+        title: 'Bopomofo',
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.system,
+        routes: {
+          AppRoutes.dashboard: (_) => DashboardPage(
+              learningEngine: widget.dependencies.learningEngine,
+              repository: widget.dependencies.repository),
+          AppRoutes.lesson: (context) => LessonPage(
+              learningEngine: widget.dependencies.learningEngine,
+              repository: widget.dependencies.repository,
+              path: _path,
+              onReview: () =>
+                  Navigator.of(context).pushNamed(AppRoutes.review)),
+          AppRoutes.review: (_) =>
+              ReviewPage(repository: widget.dependencies.repository),
+          AppRoutes.settings: (_) => SettingsPage(
+              authService: widget.dependencies.authService,
+              syncService: widget.dependencies.syncService,
+              repository: widget.dependencies.repository,
+              onReturnedToGuest: _returnToGuest,
+              onExportReady: widget.onExportReady ?? _copyExport),
+          AppRoutes.keyboard: (_) => KeyboardPage(
+              learningEngine: widget.dependencies.learningEngine,
+              repository: widget.dependencies.repository),
+          AppRoutes.account: (_) => AccountPage(
+              authService: widget.dependencies.authService,
+              repository: widget.dependencies.repository,
+              onReturnedToGuest: _returnToGuest),
+        },
+        onGenerateRoute: (settings) {
+          if (settings.name != AppRoutes.onboarding) return null;
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (context) => OnboardingPage(
+              learningEngine: widget.dependencies.learningEngine,
+              authService: widget.dependencies.authService,
+              syncService: widget.dependencies.syncService,
+              repository: widget.dependencies.repository,
+              onPathSelected: (path) => _selectNamedPath(context, path),
+            ),
+          );
+        },
+        home: AppScaffold(
+          title: 'Bopomofo',
+          selectedIndex: _navIndex,
+          onDestinationSelected: _navigate,
+          body: _body(),
+        ),
+      );
+
+  Widget _body() => switch (_page) {
+        'dashboard' => DashboardPage(
+            learningEngine: widget.dependencies.learningEngine,
+            repository: widget.dependencies.repository),
+        'lesson' => LessonPage(
+            learningEngine: widget.dependencies.learningEngine,
+            repository: widget.dependencies.repository,
+            path: _path,
+            onReview: () => setState(() => _page = 'review')),
+        'review' => ReviewPage(repository: widget.dependencies.repository),
+        'settings' => SettingsPage(
+            authService: widget.dependencies.authService,
+            syncService: widget.dependencies.syncService,
+            repository: widget.dependencies.repository,
+            onReturnedToGuest: _returnToGuest,
+            onExportReady: widget.onExportReady ?? _copyExport),
+        _ => OnboardingPage(
+            learningEngine: widget.dependencies.learningEngine,
+            authService: widget.dependencies.authService,
+            syncService: widget.dependencies.syncService,
+            repository: widget.dependencies.repository,
+            onPathSelected: (path) => setState(() {
+                  _path = path;
+                  _page = 'lesson';
+                })),
+      };
+
+  void _navigate(int index) => setState(() {
+        _navIndex = index;
+        _page = switch (index) {
+          1 => 'dashboard',
+          2 => 'settings',
+          _ => 'onboarding',
+        };
+      });
+
+  void _returnToGuest() => setState(() {
+        _page = 'onboarding';
+        _navIndex = 0;
+      });
+
+  void _selectNamedPath(BuildContext context, String path) {
+    setState(() {
+      _path = path;
+      _page = 'lesson';
+    });
+    Navigator.of(context).pushReplacementNamed(AppRoutes.lesson);
+  }
+
+  void _copyExport(String value) {
+    Clipboard.setData(ClipboardData(text: value));
+  }
+}
