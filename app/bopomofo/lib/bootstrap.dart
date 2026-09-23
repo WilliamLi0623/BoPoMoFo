@@ -1,0 +1,214 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:domain/domain.dart';
+import 'package:auth/auth.dart';
+import 'package:persistence/persistence.dart';
+import 'package:learning_engine/learning_engine.dart' show LearningSnapshot;
+import 'package:sync/sync.dart' as sync;
+
+import 'app.dart';
+
+export 'app.dart' show BopomofoApp;
+
+typedef SyncService = sync.SyncService;
+typedef LocalRepositoryFactory =
+    Future<LocalLearningRepository> Function(String userId);
+
+class AppLearningRepository implements LearningRepository {
+  AppLearningRepository(this.local)
+      : _dashboard = const DashboardSnapshot();
+
+  final LocalLearningRepository local;
+  DashboardSnapshot _dashboard;
+  final StreamController<DashboardSnapshot> _updates = StreamController.broadcast();
+  LearningSnapshot _snapshot = const LearningSnapshot();
+
+  DashboardSnapshot get dashboard => _dashboard;
+
+  double masteryFor(Skill skill) {
+    final states = _snapshot.reviewStates.where((state) => state.skill == skill);
+    final stability = states.fold<double>(0, (max, state) => state.stability > max ? state.stability : max);
+    return (stability / 21).clamp(0, 1).toDouble();
+  }
+
+  @override
+  Future<void> recordReview(ReviewAttempt attempt) async {
+    await local.recordReview(attempt);
+    await _refresh();
+  }
+
+  Future<String> exportLearningData() => local.exportLearningData();
+
+  Future<void> importLearningData(String source) async {
+    await local.importLearningData(source);
+    await _refresh();
+  }
+
+  Future<LearningSnapshot> snapshot() => local.snapshot();
+
+  @override
+  Stream<DashboardSnapshot> watchDashboard() async* {
+    yield _dashboard;
+    yield* _updates.stream;
+  }
+
+  Future<void> _refresh() async {
+    _snapshot = await local.snapshot();
+    final now = DateTime.now().toUtc();
+    _dashboard = DashboardSnapshot(
+      dueCount: _snapshot.reviewStates.where((state) => !state.dueAt.isAfter(now)).length,
+      masteredCount: _snapshot.reviewStates.where((state) => state.stability >= 21).length,
+    );
+    _updates.add(_dashboard);
+  }
+
+  Future<void> close() async {
+    await _updates.close();
+    await local.close();
+  }
+}
+
+class UnavailableSyncTransport implements sync.SyncTransport {
+  const UnavailableSyncTransport();
+
+  @override
+  Future<sync.UploadResult> upload(List<LearningEvent> events) =>
+      Future<sync.UploadResult>.error(const sync.SyncTransportUnavailable('Cloud sync is not configured.'));
+
+  @override
+  Future<sync.DownloadResult> download({required sync.SyncCursor cursor}) =>
+      Future<sync.DownloadResult>.error(const sync.SyncTransportUnavailable('Cloud sync is not configured.'));
+}
+
+Future<void> bootstrap() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final dependencies = await AppDependencies.fromConfiguration(
+    AppConfiguration.fromEnvironment(),
+  );
+
+  runApp(BopomofoApp(dependencies: dependencies));
+}
+
+class AppConfiguration {
+  const AppConfiguration({
+    this.supabaseUrl,
+    this.supabasePublishableKey,
+    this.googleRedirectUri,
+    this.appleRedirectUri,
+  });
+
+  final String? supabaseUrl;
+  final String? supabasePublishableKey;
+  final String? googleRedirectUri;
+  final String? appleRedirectUri;
+
+  factory AppConfiguration.fromEnvironment() => const AppConfiguration(
+        supabaseUrl: String.fromEnvironment('SUPABASE_URL'),
+        supabasePublishableKey: String.fromEnvironment(
+          'SUPABASE_PUBLISHABLE_KEY',
+        ),
+        googleRedirectUri: String.fromEnvironment('GOOGLE_OAUTH_REDIRECT_URI'),
+        appleRedirectUri: String.fromEnvironment('APPLE_REDIRECT_URI'),
+      );
+
+  Map<String, String> get authEnvironment => {
+        if (supabaseUrl != null) 'SUPABASE_URL': supabaseUrl!,
+        if (supabasePublishableKey != null)
+          'SUPABASE_PUBLISHABLE_KEY': supabasePublishableKey!,
+        if (googleRedirectUri != null)
+          'GOOGLE_OAUTH_REDIRECT_URI': googleRedirectUri!,
+        if (appleRedirectUri != null) 'APPLE_REDIRECT_URI': appleRedirectUri!,
+      };
+}
+
+class LearningEngine {
+  const LearningEngine(this.localDatabase);
+
+  final AppLearningRepository localDatabase;
+}
+
+class AppDependencies {
+  const AppDependencies({
+    required this.configuration,
+    required this.authService,
+    required this.syncService,
+    required this.learningEngine,
+    required this.repository,
+  });
+
+  final AppConfiguration configuration;
+  final AuthService authService;
+  final SyncService syncService;
+  final LearningEngine learningEngine;
+  final AppLearningRepository repository;
+
+  static Future<AppDependencies> fromConfiguration(
+    AppConfiguration configuration, {
+    GuestIdStore? guestStore,
+    LocalRepositoryFactory? repositoryFactory,
+  }) async {
+    final authService = await _authService(
+      configuration,
+      guestStore: guestStore,
+    );
+    final userId = authService.currentUser?.id ?? 'local-user';
+    final localRepository = repositoryFactory == null
+        ? await _openPersistentRepository(userId)
+        : await repositoryFactory(userId);
+    final repository = AppLearningRepository(localRepository);
+    final syncService = sync.LocalSyncService(
+      repository: repository.local,
+      transport: const UnavailableSyncTransport(),
+    );
+    final learningEngine = LearningEngine(repository);
+
+    return AppDependencies(
+      configuration: configuration,
+      authService: authService,
+      syncService: syncService,
+      learningEngine: learningEngine,
+      repository: repository,
+    );
+  }
+
+  static Future<LocalLearningRepository> _openPersistentRepository(
+    String userId,
+  ) async {
+    final directory = await getApplicationSupportDirectory();
+    await directory.create(recursive: true);
+    final path =
+        '${directory.path}${Platform.pathSeparator}bopomofo.sqlite';
+    final database = LocalDatabase.atPath(path);
+    await database.open();
+    return LocalLearningRepository(database: database, userId: userId);
+  }
+
+  static Future<AuthService> _authService(
+    AppConfiguration configuration, {
+    GuestIdStore? guestStore,
+  }) async {
+    try {
+      final authConfiguration = AuthConfiguration.fromEnvironment(
+        configuration.authEnvironment,
+      );
+      final gateway = await SupabaseAuthGateway.initialize(authConfiguration);
+      return SupabaseAuthService(
+        configuration: authConfiguration,
+        gateway: gateway,
+      );
+    } on AuthConfigurationError {
+      return _guestAuthService(guestStore);
+    } on Exception {
+      return _guestAuthService(guestStore);
+    }
+  }
+
+  static Future<AuthService> _guestAuthService(GuestIdStore? guestStore) {
+      if (guestStore != null) {
+        return GuestAuthService.create(store: guestStore);
+      }
+      return GuestAuthService.createPersistent();
+  }
+}

@@ -1,0 +1,18 @@
+name: persistence
+publish_to: none
+resolution: workspace
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  drift: ^2.20.0
+  sqlite3_flutter_libs: ^0.5.24
+  domain:
+    path: ../domain
+  learning_engine:
+    path: ../learning_engine
+  srs:
+    path: ../srs
+
+dev_dependencies:
+  test: ^1.25.0

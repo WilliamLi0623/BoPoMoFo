@@ -1,0 +1,19 @@
+name: sync
+publish_to: none
+resolution: workspace
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  domain:
+    path: ../domain
+  learning_engine:
+    path: ../learning_engine
+  persistence:
+    path: ../persistence
+  supabase_flutter: ^2.9.0
+
+dev_dependencies:
+  srs:
+    path: ../srs
+  test: ^1.25.0

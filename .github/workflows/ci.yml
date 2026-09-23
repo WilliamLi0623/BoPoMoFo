@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve workspace
+        run: dart pub get
+      - name: Install Linux desktop test dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+      - name: Resolve Flutter app
+        working-directory: app/bopomofo
+        run: flutter pub get
+      - name: Package analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in packages/domain packages/phonology packages/content packages/srs packages/learning_engine; do
+            (cd $package && dart analyze)
+          done
+          for package in packages/persistence packages/auth packages/sync packages/design_system; do
+            (cd $package && flutter analyze)
+          done
+      - name: Dart package tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in packages/domain packages/phonology packages/content packages/srs packages/learning_engine; do
+            echo "== dart test: $package =="
+            (cd "$package" && dart test)
+          done
+          for package in packages/persistence packages/auth packages/sync; do
+            echo "== flutter test: $package =="
+            (cd "$package" && flutter test)
+          done
+      - name: Flutter analyze
+        working-directory: app/bopomofo
+        run: flutter analyze
+      - name: Flutter unit and widget tests
+        working-directory: app/bopomofo
+        run: flutter test
+      - name: Offline and restart integration scenario
+        working-directory: app/bopomofo
+        run: flutter test integration_test/offline_learning_test.dart
+      - name: Multi-device merge integration scenario
+        working-directory: app/bopomofo
+        run: flutter test integration_test/multi_device_merge_test.dart
