@@ -167,7 +167,7 @@ Expected: new persistence cases fail until loading, validation, and write recove
 
 - [ ] **Step 3: Implement the SharedPreferences adapter and controller behavior**
 
-Use a single key `app_locale`. Store canonical tags `zh-Hans`, `zh-Hant`, and `en`; parse only those tags. On `select`, notify listeners immediately, then attempt to persist. Catch preference read/write errors inside the controller so they cannot block app startup or the current-session language change.
+Use a single key `app_locale`. Store canonical tags `zh-Hans`, `zh-Hant`, and `en`; parse only those tags. If `SharedPreferences.setString` returns `false`, surface that as a failed write to the controller. On `select`, notify listeners immediately, then attempt to persist. Catch preference read/write errors inside the controller so they cannot block app startup or the current-session language change.
 
 - [ ] **Step 4: Add ARB entries for app shell and language selector**
 
@@ -318,10 +318,10 @@ Use an in-memory locale preference store and the existing in-memory learning rep
 Run from `app/bopomofo`:
 
 ```powershell
-flutter test integration_test/offline_learning_test.dart -d linux
+flutter test integration_test/offline_learning_test.dart -d windows
 ```
 
-Expected: the locale-switch scenario passes under the configured X server; if the local target cannot run, keep CI's Xvfb path as the integration verification and report the local limitation.
+Expected: the locale-switch scenario passes on the local Windows desktop. CI continues to run its Linux integration path under Xvfb; report either platform as unavailable rather than calling it passed.
 
 - [ ] **Step 3: Verify current README claims and commands against repository files**
 
