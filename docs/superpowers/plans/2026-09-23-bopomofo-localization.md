@@ -231,7 +231,7 @@ Expected: Chinese expectations fail against the current hardcoded English copy.
 
 - [ ] **Step 3: Add complete matching ARB messages for these screens**
 
-Translate onboarding intro and path choices, sign-in progress, lesson heading/path labels, review prompts/results/next action, dashboard headings/metrics, offline copy, and due/mastered/confusion counts. Use ICU plural syntax for all count messages and placeholders for changing values.
+Translate onboarding intro and path choices, sign-in progress/cancel/failure status, lesson heading/path labels, review prompts/results/next action, dashboard headings/metrics, offline copy, and due/mastered/confusion counts. Use ICU plural syntax for all count messages and placeholders for changing values.
 
 - [ ] **Step 4: Replace hardcoded user-facing text with generated accessors**
 
@@ -302,7 +302,6 @@ Expected: all three locales render localized actions/errors, and existing deleti
 - Modify: `README.md`
 - Create: `README.zh-TW.md`
 - Create: `README.en.md`
-- Modify: app tests only where localized defaults changed existing assumptions
 - Modify: `app/bopomofo/integration_test/offline_learning_test.dart`
 
 **Interfaces:**
