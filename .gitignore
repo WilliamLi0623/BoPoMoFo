@@ -20,6 +20,7 @@ build/
 # Local Codex settings, task handoff material, and execution notes
 .codex/
 .superpowers/
+.worktrees/
 outputs/
 
 # Local environment secrets (retain the safe template)
