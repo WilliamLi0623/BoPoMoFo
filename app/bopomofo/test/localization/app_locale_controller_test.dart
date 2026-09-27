@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bopomofo/localization/app_locale_controller.dart';
 import 'package:bopomofo/localization/locale_preference_store.dart';
 import 'package:flutter/widgets.dart';
@@ -69,6 +71,31 @@ void main() {
     expect(controller.locale, const Locale('en'));
   });
 
+  test('load restores stored simplified Chinese', () async {
+    final controller = await AppLocaleController.load(
+      store: _MemoryLocalePreferenceStore('zh-Hans'),
+      platformLocales: const [Locale('zh', 'TW')],
+    );
+    expect(controller.locale, hans);
+  });
+
+  test('load uses device locale when no preference exists', () async {
+    final controller = await AppLocaleController.load(
+      store: _MemoryLocalePreferenceStore(),
+      platformLocales: const [Locale('zh', 'TW')],
+    );
+    expect(controller.locale, hant);
+  });
+
+  test('load uses device locale when reading fails', () async {
+    final store = _MemoryLocalePreferenceStore('en')..failReads = true;
+    final controller = await AppLocaleController.load(
+      store: store,
+      platformLocales: const [Locale('zh', 'TW')],
+    );
+    expect(controller.locale, hant);
+  });
+
   test('load ignores an unsupported stored locale and resolves the platform', () async {
     final store = _MemoryLocalePreferenceStore('en-US');
 
@@ -124,6 +151,21 @@ void main() {
     expect(await controller.select(hant), isFalse);
     expect(controller.locale, hant);
   });
+
+  test('select notifies before a pending write completes', () async {
+    final store = _MemoryLocalePreferenceStore()..pendingWrite = Completer<void>();
+    final controller = await AppLocaleController.load(
+      store: store,
+      platformLocales: const [Locale('zh', 'CN')],
+    );
+    var notifications = 0;
+    controller.addListener(() => notifications++);
+    final selection = controller.select(hant);
+    expect(controller.locale, hant);
+    expect(notifications, 1);
+    store.pendingWrite!.complete();
+    expect(await selection, isTrue);
+  });
 }
 
 class _MemoryLocalePreferenceStore implements LocalePreferenceStore {
@@ -131,13 +173,19 @@ class _MemoryLocalePreferenceStore implements LocalePreferenceStore {
 
   String? localeTag;
   bool failWrites = false;
+  bool failReads = false;
+  Completer<void>? pendingWrite;
 
   @override
-  Future<String?> readLocaleTag() async => localeTag;
+  Future<String?> readLocaleTag() async {
+    if (failReads) throw StateError('read failed');
+    return localeTag;
+  }
 
   @override
   Future<void> writeLocaleTag(String localeTag) async {
     if (failWrites) throw StateError('write failed');
+    await pendingWrite?.future;
     this.localeTag = localeTag;
   }
 }

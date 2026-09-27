@@ -1,6 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'bootstrap.dart';
 import 'features/dashboard/dashboard_page.dart';
@@ -11,12 +12,15 @@ import 'features/settings/settings_page.dart';
 import 'features/keyboard/keyboard_page.dart';
 import 'features/account/account_page.dart';
 import 'routes.dart';
+import 'l10n/app_localizations.dart';
+import 'localization/app_locale_controller.dart';
 
 class BopomofoApp extends StatefulWidget {
   const BopomofoApp(
-      {required this.dependencies, this.onExportReady, super.key});
+      {required this.dependencies, required this.localeController, this.onExportReady, super.key});
 
   final AppDependencies dependencies;
+  final AppLocaleController localeController;
   final ValueChanged<String>? onExportReady;
 
   @override
@@ -29,8 +33,43 @@ class _BopomofoAppState extends State<BopomofoApp> {
   String _path = 'pinyin';
 
   @override
+  void initState() {
+    super.initState();
+    widget.localeController.addListener(_onLocaleChanged);
+  }
+
+  @override
+  void didUpdateWidget(BopomofoApp oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.localeController != widget.localeController) {
+      oldWidget.localeController.removeListener(_onLocaleChanged);
+      widget.localeController.addListener(_onLocaleChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.localeController.removeListener(_onLocaleChanged);
+    super.dispose();
+  }
+
+  void _onLocaleChanged() => setState(() {});
+
+  @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'Bopomofo',
+        locale: widget.localeController.locale,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en'),
+          Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+          Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+        ],
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.system,
@@ -47,6 +86,7 @@ class _BopomofoAppState extends State<BopomofoApp> {
           AppRoutes.review: (_) =>
               ReviewPage(repository: widget.dependencies.repository),
           AppRoutes.settings: (_) => SettingsPage(
+              localeController: widget.localeController,
               authService: widget.dependencies.authService,
               syncService: widget.dependencies.syncService,
               repository: widget.dependencies.repository,
@@ -73,11 +113,19 @@ class _BopomofoAppState extends State<BopomofoApp> {
             ),
           );
         },
-        home: AppScaffold(
-          title: 'Bopomofo',
-          selectedIndex: _navIndex,
-          onDestinationSelected: _navigate,
-          body: _body(),
+        home: Builder(
+          builder: (context) {
+            final labels = AppLocalizations.of(context)!;
+            return AppScaffold(
+              title: labels.shellTitle,
+              homeLabel: labels.home,
+              dashboardLabel: labels.dashboard,
+              settingsLabel: labels.settings,
+              selectedIndex: _navIndex,
+              onDestinationSelected: _navigate,
+              body: _body(),
+            );
+          },
         ),
       );
 
@@ -92,6 +140,7 @@ class _BopomofoAppState extends State<BopomofoApp> {
             onReview: () => setState(() => _page = 'review')),
         'review' => ReviewPage(repository: widget.dependencies.repository),
         'settings' => SettingsPage(
+            localeController: widget.localeController,
             authService: widget.dependencies.authService,
             syncService: widget.dependencies.syncService,
             repository: widget.dependencies.repository,

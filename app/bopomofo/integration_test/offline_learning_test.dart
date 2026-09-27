@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:persistence/persistence.dart';
 import 'package:sync/sync.dart';
+import '../test/test_support.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +38,10 @@ void main() {
     var repositoryClosed = false;
 
     try {
-      await tester.pumpWidget(BopomofoApp(dependencies: dependencies));
+      await tester.pumpWidget(BopomofoApp(
+        dependencies: dependencies,
+        localeController: await createEnglishLocaleController(),
+      ));
       expect(find.text('Guest mode · saved locally'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('path-sounds')));
       await tester.pumpAndSettle();

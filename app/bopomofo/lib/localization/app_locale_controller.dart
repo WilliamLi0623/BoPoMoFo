@@ -51,9 +51,13 @@ class AppLocaleController extends ChangeNotifier {
     required LocalePreferenceStore store,
     required List<Locale> platformLocales,
   }) async {
-    final locale =
-        _localeForTag(await store.readLocaleTag()) ??
-        resolveDefaultLocale(platformLocales);
+    Locale? storedLocale;
+    try {
+      storedLocale = _localeForTag(await store.readLocaleTag());
+    } on Object {
+      // A broken preference backend must not prevent app startup.
+    }
+    final locale = storedLocale ?? resolveDefaultLocale(platformLocales);
     return AppLocaleController._(store: store, locale: locale);
   }
 

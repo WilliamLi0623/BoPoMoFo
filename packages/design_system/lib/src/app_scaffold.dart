@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 class AppScaffold extends StatelessWidget {
   const AppScaffold({
     required this.title,
+    required this.homeLabel,
+    required this.dashboardLabel,
+    required this.settingsLabel,
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.body,
@@ -10,18 +13,20 @@ class AppScaffold extends StatelessWidget {
   });
 
   final String title;
+  final String homeLabel;
+  final String dashboardLabel;
+  final String settingsLabel;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final Widget body;
 
-  static const destinations = <NavigationDestination>[
-    NavigationDestination(key: ValueKey('nav-home'), icon: Icon(Icons.home_outlined), label: 'Home'),
-    NavigationDestination(key: ValueKey('nav-dashboard'), icon: Icon(Icons.dashboard_outlined), label: 'Dashboard'),
-    NavigationDestination(key: ValueKey('nav-settings'), icon: Icon(Icons.settings_outlined), label: 'Settings'),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final destinations = <NavigationDestination>[
+      NavigationDestination(key: const ValueKey('nav-home'), icon: const Icon(Icons.home_outlined), label: homeLabel),
+      NavigationDestination(key: const ValueKey('nav-dashboard'), icon: const Icon(Icons.dashboard_outlined), label: dashboardLabel),
+      NavigationDestination(key: const ValueKey('nav-settings'), icon: const Icon(Icons.settings_outlined), label: settingsLabel),
+    ];
     final navigation = NavigationBar(
       selectedIndex: selectedIndex,
       onDestinationSelected: onDestinationSelected,
