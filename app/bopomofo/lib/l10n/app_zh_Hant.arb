@@ -1,0 +1,7 @@
+{
+  "@@locale": "zh_Hant",
+  "appName": "注音學習",
+  "@appName": {
+    "description": "The application name"
+  }
+}
