@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:domain/domain.dart';
 
 import '../../bootstrap.dart';
+import '../../l10n/app_localizations.dart';
 
 class ReviewPage extends StatefulWidget {
   const ReviewPage({required this.repository, super.key});
@@ -26,12 +27,14 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) {
+    final labels = AppLocalizations.of(context)!;
+    return ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text('Recognition review', style: Theme.of(context).textTheme.titleLarge),
+          Text(labels.reviewTitle, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 24),
-          Text('What sound does this symbol represent?', style: Theme.of(context).textTheme.bodyLarge),
+          Text(labels.reviewQuestion, style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 16),
           Text('ㄅ', key: const ValueKey('review-prompt-ㄅ'), textAlign: TextAlign.center, style: Theme.of(context).textTheme.displayLarge),
           const SizedBox(height: 24),
@@ -41,10 +44,11 @@ class _ReviewPageState extends State<ReviewPage> {
           ]),
           if (_saved) ...[
             const SizedBox(height: 20),
-            const Card(child: ListTile(leading: Icon(Icons.check_circle), title: Text('Saved locally'), subtitle: Text('Your progress is safe offline.'))),
+            Card(child: ListTile(leading: const Icon(Icons.check_circle), title: Text(labels.reviewSavedLocally), subtitle: Text(labels.reviewOfflineProgress))),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: () => setState(() => _saved = false), child: const Text('Next prompt')),
+            OutlinedButton(onPressed: () => setState(() => _saved = false), child: Text(labels.reviewNextPrompt)),
           ],
         ],
       );
+  }
 }

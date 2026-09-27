@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:auth/auth.dart';
 import '../../bootstrap.dart';
+import '../../l10n/app_localizations.dart';
+
+enum _SignInStatus { complete, cancelled, unavailable }
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({required this.learningEngine, required this.authService, required this.syncService, required this.repository, required this.onPathSelected, super.key});
@@ -16,42 +19,57 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
-  String? _authMessage;
+  _SignInStatus? _authStatus;
   bool _authBusy = false;
 
   Future<void> _signInWithGoogle() async {
-    setState(() { _authBusy = true; _authMessage = null; });
+    setState(() { _authBusy = true; _authStatus = null; });
     try {
       await widget.authService.signInWithGoogle();
-      if (mounted) setState(() => _authMessage = 'Google sign-in complete.');
+      if (mounted) setState(() => _authStatus = _SignInStatus.complete);
     } catch (error) {
-      if (mounted) setState(() => _authMessage = 'Google sign-in unavailable: $error');
+      if (mounted) {
+        setState(() {
+          _authStatus = error is AuthFailure && error.kind == AuthFailureKind.cancelled
+              ? _SignInStatus.cancelled
+              : _SignInStatus.unavailable;
+        });
+      }
     } finally {
       if (mounted) setState(() => _authBusy = false);
     }
   }
 
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) {
+    final labels = AppLocalizations.of(context)!;
+    final authMessage = switch (_authStatus) {
+      _SignInStatus.complete => labels.googleSignInComplete,
+      _SignInStatus.cancelled => labels.googleSignInCancelled,
+      _SignInStatus.unavailable => labels.googleSignInUnavailable,
+      null => null,
+    };
+    return ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text('Learn Bopomofo from what you already know.', style: Theme.of(context).textTheme.headlineMedium),
+          Text(labels.onboardingTitle, style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 12),
-          const Text('Choose a starting point. You can change your path later.'),
+          Text(labels.onboardingIntro),
           const SizedBox(height: 8),
-          const Text('Guest mode · saved locally'),
+          Text(labels.guestModeLocal),
           const SizedBox(height: 20),
-          OutlinedButton(key: const ValueKey('start-learning'), onPressed: () => widget.onPathSelected('pinyin'), child: const Text('Start Learning')),
+          OutlinedButton(key: const ValueKey('start-learning'), onPressed: () => widget.onPathSelected('pinyin'), child: Text(labels.startLearning)),
           const SizedBox(height: 12),
-          _PathButton(key: const ValueKey('path-pinyin'), label: 'Start with Pinyin', onPressed: () => widget.onPathSelected('pinyin')),
-          _PathButton(key: const ValueKey('path-sounds'), label: 'Start with sounds', onPressed: () => widget.onPathSelected('sounds')),
-          _PathButton(key: const ValueKey('path-beginner'), label: 'I am new to Chinese', onPressed: () => widget.onPathSelected('beginner')),
-          OutlinedButton(onPressed: _authBusy ? null : _signInWithGoogle, child: Text(_authBusy ? 'Signing in…' : 'Sign in with Google')),
-          if (_authMessage != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_authMessage!, key: const ValueKey('auth-status'))),
+          _PathButton(key: const ValueKey('path-pinyin'), label: labels.pathPinyin, onPressed: () => widget.onPathSelected('pinyin')),
+          _PathButton(key: const ValueKey('path-sounds'), label: labels.pathSounds, onPressed: () => widget.onPathSelected('sounds')),
+          _PathButton(key: const ValueKey('path-beginner'), label: labels.pathBeginner, onPressed: () => widget.onPathSelected('beginner')),
+          OutlinedButton(onPressed: _authBusy ? null : _signInWithGoogle, child: Text(_authBusy ? labels.signingIn : labels.googleSignIn)),
+          if (authMessage != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(authMessage, key: const ValueKey('auth-status'))),
           const SizedBox(height: 20),
-          const Card(child: ListTile(leading: Icon(Icons.cloud_off), title: Text('Progress is saved locally.'), subtitle: Text('You can keep learning offline and sync later.'))),
+          Card(child: ListTile(leading: const Icon(Icons.cloud_off), title: Text(labels.progressSavedLocally), subtitle: Text(labels.offlineLearningSyncLater))),
         ],
       );
+  }
 }
 
 class _PathButton extends StatelessWidget {

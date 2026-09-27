@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:domain/domain.dart';
 
 import '../../bootstrap.dart';
+import '../../l10n/app_localizations.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({required this.learningEngine, required this.repository, super.key});
@@ -10,7 +11,9 @@ class DashboardPage extends StatelessWidget {
   final AppLearningRepository repository;
 
   @override
-  Widget build(BuildContext context) => StreamBuilder<DashboardSnapshot>(
+  Widget build(BuildContext context) {
+    final labels = AppLocalizations.of(context)!;
+    return StreamBuilder<DashboardSnapshot>(
         stream: repository.watchDashboard(),
         initialData: repository.dashboard,
         builder: (context, snapshot) {
@@ -18,22 +21,23 @@ class DashboardPage extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              Text('Your progress', style: Theme.of(context).textTheme.headlineMedium),
+              Text(labels.dashboardProgress, style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: 16),
               Wrap(spacing: 12, runSpacing: 12, children: [
-                _MasteryCard('Recognition', Skill.recognition, repository),
-                _MasteryCard('Listening', Skill.listening, repository),
-                _MasteryCard('Pinyin conversion', Skill.pinyinConversion, repository),
-                _MasteryCard('Keyboard', Skill.keyboard, repository),
-                _MasteryCard('Hanzi input', Skill.composition, repository),
+                _MasteryCard(labels.masteryRecognition, Skill.recognition, repository),
+                _MasteryCard(labels.masteryListening, Skill.listening, repository),
+                _MasteryCard(labels.masteryPinyinConversion, Skill.pinyinConversion, repository),
+                _MasteryCard(labels.masteryKeyboard, Skill.keyboard, repository),
+                _MasteryCard(labels.masteryHanziInput, Skill.composition, repository),
               ]),
               const SizedBox(height: 20),
-              Card(child: ListTile(title: Text('Due reviews: ${data.dueCount}'), subtitle: Text('Mastered items: ${data.masteredCount}'))),
-              const Card(child: ListTile(title: Text('Confusion targets: 0'), subtitle: Text('Practice the distinctions that need attention.'))),
+              Card(child: ListTile(title: Text(labels.dueReviewsCount(data.dueCount)), subtitle: Text(labels.masteredItemsCount(data.masteredCount)))),
+              Card(child: ListTile(title: Text(labels.confusionTargetsCount(0)), subtitle: Text(labels.confusionHint))),
             ],
           );
         },
       );
+  }
 }
 
 class _MasteryCard extends StatelessWidget {
@@ -44,8 +48,11 @@ class _MasteryCard extends StatelessWidget {
   final AppLearningRepository repository;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
+  Widget build(BuildContext context) {
+    final labels = AppLocalizations.of(context)!;
+    return SizedBox(
         width: 180,
-        child: Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label), const SizedBox(height: 8), Text('${(repository.masteryFor(skill) * 100).round()}%', style: Theme.of(context).textTheme.titleLarge)]))),
+        child: Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label), const SizedBox(height: 8), Text(labels.masteryPercent((repository.masteryFor(skill) * 100).round()), style: Theme.of(context).textTheme.titleLarge)]))),
       );
+  }
 }
