@@ -116,7 +116,10 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('settings-status')),
         300,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: find.ancestor(
+          of: find.byKey(const ValueKey('settings-language')),
+          matching: find.byType(Scrollable),
+        ).first,
       );
 
       expect(find.text(localized.started), findsOneWidget);
@@ -144,7 +147,10 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('settings-status')),
       300,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find.ancestor(
+        of: find.byKey(const ValueKey('settings-language')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
 
     expect(find.text('Google sign-in complete.'), findsOneWidget);
@@ -243,7 +249,10 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('settings-status')),
         300,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: find.ancestor(
+          of: find.byKey(const ValueKey('settings-language')),
+          matching: find.byType(Scrollable),
+        ).first,
       );
 
       expect(find.descendant(

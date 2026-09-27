@@ -80,28 +80,40 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Delete account'),
       300,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find.ancestor(
+        of: find.byKey(const ValueKey('settings-language')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('Delete account'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Sync now'),
       -300,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find.ancestor(
+        of: find.byKey(const ValueKey('settings-language')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     await tester.tap(find.text('Sync now'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.textContaining('Sync failed'),
       300,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find.ancestor(
+        of: find.byKey(const ValueKey('settings-language')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.textContaining('Sync failed'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Export progress'),
       -300,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find.ancestor(
+        of: find.byKey(const ValueKey('settings-language')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     await tester.tap(find.text('Export progress'));
     await tester.pumpAndSettle();
