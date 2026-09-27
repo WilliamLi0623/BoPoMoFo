@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:auth/auth.dart';
 import '../../bootstrap.dart';
 import '../account/account_page.dart';
+import '../../l10n/app_localizations.dart';
+import '../../localization/app_locale_controller.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({required this.authService, required this.syncService, required this.repository, this.onReturnedToGuest, this.onExportReady, super.key});
+  const SettingsPage({required this.authService, required this.syncService, required this.repository, required this.localeController, this.onReturnedToGuest, this.onExportReady, super.key});
 
   final AuthService authService;
   final SyncService syncService;
   final AppLearningRepository repository;
+  final AppLocaleController localeController;
   final VoidCallback? onReturnedToGuest;
   final ValueChanged<String>? onExportReady;
   @override
@@ -19,6 +22,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _importController = TextEditingController();
   String? _status;
   bool _busy = false;
+  bool _languageSaveFailed = false;
 
   @override
   void dispose() {
@@ -75,11 +79,43 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) {
+    final labels = AppLocalizations.of(context)!;
+    return ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text('Settings', style: Theme.of(context).textTheme.headlineMedium),
+          Text(labels.settings, style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 12),
+          Text(labels.language),
+          DropdownButton<Locale>(
+            key: const ValueKey('settings-language'),
+            value: widget.localeController.locale,
+            isExpanded: true,
+            items: [
+              DropdownMenuItem(
+                value: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+                child: Text(labels.simplifiedChinese),
+              ),
+              DropdownMenuItem(
+                value: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+                child: Text(labels.traditionalChinese),
+              ),
+              DropdownMenuItem(
+                value: const Locale('en'),
+                child: Text(labels.english),
+              ),
+            ],
+            onChanged: (locale) async {
+              if (locale == null) return;
+              final saved = await widget.localeController.select(locale);
+              if (mounted) setState(() => _languageSaveFailed = !saved);
+            },
+          ),
+          if (_languageSaveFailed)
+            Text(
+              labels.languageNotSaved,
+              key: const ValueKey('language-save-warning'),
+            ),
           const Text('Progress is saved locally.'),
           const SizedBox(height: 16),
           Card(
@@ -108,4 +144,5 @@ class _SettingsPageState extends State<SettingsPage> {
           if (_status != null) Card(key: const ValueKey('settings-status'), child: ListTile(leading: const Icon(Icons.info_outline), title: Text(_status!))),
         ],
       );
+  }
 }

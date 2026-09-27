@@ -11,7 +11,7 @@ void main() {
 
   testWidgets('onboarding offers the three learning paths', (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies()),
+      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
     );
 
     expect(find.text('Bopomofo'), findsOneWidget);
@@ -24,7 +24,7 @@ void main() {
 
   testWidgets('guest review saves locally and shows the next prompt', (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies()),
+      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
     );
 
     await tester.tap(find.byKey(const ValueKey('path-pinyin')));
@@ -42,7 +42,7 @@ void main() {
 
   testWidgets('dashboard separates mastery projections and due status', (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies()),
+      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
     );
 
     await tester.tap(find.byKey(const ValueKey('nav-dashboard')));
@@ -59,7 +59,7 @@ void main() {
 
   testWidgets('settings exposes account, sync, data, and deletion actions', (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies()),
+      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
     );
 
     await tester.tap(find.byKey(const ValueKey('nav-settings')));
@@ -91,7 +91,7 @@ void main() {
   });
 
   testWidgets('named keyboard route is registered', (tester) async {
-    await tester.pumpWidget(BopomofoApp(dependencies: await dependencies()));
+    await tester.pumpWidget(BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()));
     Navigator.of(tester.element(find.byType(AppScaffold))).pushNamed('/keyboard');
     await tester.pumpAndSettle();
 

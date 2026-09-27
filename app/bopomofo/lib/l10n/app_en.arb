@@ -3,5 +3,14 @@
   "appName": "Bopomofo",
   "@appName": {
     "description": "The application name"
-  }
+  },
+  "shellTitle": "Bopomofo",
+  "home": "Home",
+  "dashboard": "Dashboard",
+  "settings": "Settings",
+  "language": "Language",
+  "simplifiedChinese": "简体中文",
+  "traditionalChinese": "繁體中文",
+  "english": "English",
+  "languageNotSaved": "Your language choice may not be saved."
 }
