@@ -23,6 +23,7 @@
   "googleSignIn": "Sign in with Google",
   "signingIn": "Signing in…",
   "googleSignInComplete": "Google sign-in complete.",
+  "googleSignInStarted": "Google sign-in started. Complete sign-in to continue.",
   "googleSignInCancelled": "Google sign-in cancelled.",
   "googleSignInUnavailable": "Google sign-in is unavailable. Keep learning offline and try again later.",
   "progressSavedLocally": "Progress is saved locally.",

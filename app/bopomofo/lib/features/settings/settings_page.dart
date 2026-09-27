@@ -8,7 +8,7 @@ import '../../localization/app_locale_controller.dart';
 
 enum _SettingsStatus {
   syncLocalOnly, syncPending, syncSynced, syncOffline, syncError,
-  signedOut, signOutFailed, signInComplete, signInCancelled, signInFailed,
+  signedOut, signOutFailed, signInStarted, signInComplete, signInCancelled, signInFailed,
   exportReady, exportFailed, importEmpty, importComplete, importFailed,
 }
 
@@ -96,8 +96,9 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _signIn() async {
     setState(() { _busy = true; _status = null; });
     try {
-      await widget.authService.signInWithGoogle();
-      if (mounted) setState(() => _status = _SettingsStatus.signInComplete);
+      final user = await widget.authService.signInWithGoogle();
+      if (mounted) setState(() => _status = user == null
+          ? _SettingsStatus.signInStarted : _SettingsStatus.signInComplete);
     } catch (error) {
       if (mounted) setState(() => _status = error is AuthFailure && error.kind == AuthFailureKind.cancelled
           ? _SettingsStatus.signInCancelled : _SettingsStatus.signInFailed);
@@ -117,6 +118,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _SettingsStatus.syncError => labels.syncFailed,
       _SettingsStatus.signedOut => labels.signOutComplete,
       _SettingsStatus.signOutFailed => labels.signOutUnavailable,
+      _SettingsStatus.signInStarted => labels.googleSignInStarted,
       _SettingsStatus.signInComplete => labels.googleSignInComplete,
       _SettingsStatus.signInCancelled => labels.googleSignInCancelled,
       _SettingsStatus.signInFailed => labels.googleSignInUnavailable,
