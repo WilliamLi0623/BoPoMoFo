@@ -80,8 +80,8 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Delete account'),
       300,
-      scrollable: find.ancestor(
-        of: find.text('Settings'),
+      scrollable: find.descendant(
+        of: find.byType(AppScaffold),
         matching: find.byType(Scrollable),
       ).first,
     );
@@ -90,8 +90,8 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Sync now'),
       -300,
-      scrollable: find.ancestor(
-        of: find.text('Settings'),
+      scrollable: find.descendant(
+        of: find.byType(AppScaffold),
         matching: find.byType(Scrollable),
       ).first,
     );
@@ -100,8 +100,8 @@ void main() {
     await tester.scrollUntilVisible(
       find.textContaining('Sync failed'),
       300,
-      scrollable: find.ancestor(
-        of: find.text('Settings'),
+      scrollable: find.descendant(
+        of: find.byType(AppScaffold),
         matching: find.byType(Scrollable),
       ).first,
     );
@@ -110,8 +110,8 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Export progress'),
       -300,
-      scrollable: find.ancestor(
-        of: find.text('Settings'),
+      scrollable: find.descendant(
+        of: find.byType(AppScaffold),
         matching: find.byType(Scrollable),
       ).first,
     );
