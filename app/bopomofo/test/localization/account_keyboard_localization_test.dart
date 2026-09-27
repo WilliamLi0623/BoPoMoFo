@@ -116,8 +116,8 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('settings-status')),
         300,
-        scrollable: find.ancestor(
-          of: find.text(localized.settings),
+        scrollable: find.descendant(
+          of: find.byType(AppScaffold),
           matching: find.byType(Scrollable),
         ).first,
       );
@@ -147,8 +147,8 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('settings-status')),
       300,
-      scrollable: find.ancestor(
-        of: find.text('Settings'),
+      scrollable: find.descendant(
+        of: find.byType(AppScaffold),
         matching: find.byType(Scrollable),
       ).first,
     );
@@ -249,8 +249,8 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('settings-status')),
         300,
-        scrollable: find.ancestor(
-          of: find.text('Settings'),
+        scrollable: find.descendant(
+          of: find.byType(AppScaffold),
           matching: find.byType(Scrollable),
         ).first,
       );
