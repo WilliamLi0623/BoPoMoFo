@@ -98,14 +98,17 @@ void main() {
     await tester.tap(find.text('Sync now'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.textContaining('Sync failed'),
+      find.text('Sync is unavailable offline. Local progress remains safe.'),
       300,
       scrollable: find.descendant(
         of: find.byType(AppScaffold),
         matching: find.byType(Scrollable),
       ).first,
     );
-    expect(find.textContaining('Sync failed'), findsOneWidget);
+    expect(
+      find.text('Sync is unavailable offline. Local progress remains safe.'),
+      findsOneWidget,
+    );
 
     await tester.scrollUntilVisible(
       find.text('Export progress'),
