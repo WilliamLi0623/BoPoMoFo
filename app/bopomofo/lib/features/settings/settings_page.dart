@@ -43,13 +43,15 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() { _busy = true; _status = null; });
     try {
       final result = await widget.syncService.syncNow();
-      if (mounted) setState(() => _status = switch (result.status) {
-        SyncStatus.localOnly => _SettingsStatus.syncLocalOnly,
-        SyncStatus.pending => _SettingsStatus.syncPending,
-        SyncStatus.synced => _SettingsStatus.syncSynced,
-        SyncStatus.offline => _SettingsStatus.syncOffline,
-        SyncStatus.error => _SettingsStatus.syncError,
-      });
+      if (mounted) {
+        setState(() => _status = switch (result.status) {
+          SyncStatus.localOnly => _SettingsStatus.syncLocalOnly,
+          SyncStatus.pending => _SettingsStatus.syncPending,
+          SyncStatus.synced => _SettingsStatus.syncSynced,
+          SyncStatus.offline => _SettingsStatus.syncOffline,
+          SyncStatus.error => _SettingsStatus.syncError,
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _status = _SettingsStatus.syncError);
     } finally {
@@ -97,11 +99,15 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() { _busy = true; _status = null; });
     try {
       final user = await widget.authService.signInWithGoogle();
-      if (mounted) setState(() => _status = user == null
-          ? _SettingsStatus.signInStarted : _SettingsStatus.signInComplete);
+      if (mounted) {
+        setState(() => _status = user == null
+            ? _SettingsStatus.signInStarted : _SettingsStatus.signInComplete);
+      }
     } catch (error) {
-      if (mounted) setState(() => _status = error is AuthFailure && error.kind == AuthFailureKind.cancelled
-          ? _SettingsStatus.signInCancelled : _SettingsStatus.signInFailed);
+      if (mounted) {
+        setState(() => _status = error is AuthFailure && error.kind == AuthFailureKind.cancelled
+            ? _SettingsStatus.signInCancelled : _SettingsStatus.signInFailed);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
