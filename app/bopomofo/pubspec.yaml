@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   auth:
     path: ../../packages/auth
   design_system:
@@ -25,6 +27,7 @@ dependencies:
     path: ../../packages/phonology
   sync:
     path: ../../packages/sync
+  shared_preferences: ^2.3.3
 
 dev_dependencies:
   integration_test:
@@ -32,7 +35,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   flutter_test:
     sdk: flutter
-  shared_preferences: ^2.3.3
 
 flutter:
+  generate: true
   uses-material-design: true
