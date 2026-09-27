@@ -55,6 +55,10 @@ void main() {
     expect(find.text('Hanzi input'), findsOneWidget);
     expect(find.textContaining('Due reviews'), findsOneWidget);
     expect(find.textContaining('Confusion targets'), findsOneWidget);
+    expect(find.text('Due reviews: 0'), findsOneWidget);
+    expect(find.text('Mastered items: 0'), findsOneWidget);
+    expect(find.text('Confusion targets: 0'), findsOneWidget);
+    expect(find.text('0%'), findsNWidgets(5));
   });
 
   testWidgets('settings exposes account, sync, data, and deletion actions', (tester) async {
