@@ -25,6 +25,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('account-delete')));
     await tester.pumpAndSettle();
+    expect(find.text('Delete account?'), findsOneWidget);
+    expect(find.text('Delete local learning data too'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('confirm-delete-account')));
     await tester.pumpAndSettle();
 

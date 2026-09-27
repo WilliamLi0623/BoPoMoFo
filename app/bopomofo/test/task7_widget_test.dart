@@ -73,22 +73,36 @@ void main() {
     expect(find.text('Sync now'), findsOneWidget);
     expect(find.text('Export progress'), findsOneWidget);
     expect(find.text('Import progress'), findsOneWidget);
-    expect(find.text('Delete account'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
     expect(find.text('Sign in with Google'), findsOneWidget);
     expect(find.text('Progress is saved locally.'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Delete account'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Delete account'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Sync now'),
+      -300,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Sync now'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.textContaining('Sync failed'),
       300,
-      scrollable: find
-          .ancestor(of: find.text('Settings'), matching: find.byType(Scrollable))
-          .first,
+      scrollable: find.byType(Scrollable).last,
     );
     expect(find.textContaining('Sync failed'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Export progress'),
+      -300,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Export progress'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Export ready'), findsOneWidget);
