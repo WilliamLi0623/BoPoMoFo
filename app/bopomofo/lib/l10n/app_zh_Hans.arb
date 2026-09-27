@@ -1,6 +1,6 @@
 {
   "@@locale": "zh_Hans",
-  "appName": "注音学习",
+  "appName": "Bopomofo",
   "@appName": {
     "description": "The application name"
   }
