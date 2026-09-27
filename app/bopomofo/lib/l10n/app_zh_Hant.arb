@@ -23,6 +23,7 @@
   "googleSignIn": "使用 Google 登入",
   "signingIn": "正在登入…",
   "googleSignInComplete": "Google 登入成功。",
+  "googleSignInStarted": "已啟動 Google 登入。完成登入後即可繼續。",
   "googleSignInCancelled": "已取消 Google 登入。",
   "googleSignInUnavailable": "暫時無法使用 Google 登入。你可以繼續離線學習，稍後再試。",
   "progressSavedLocally": "進度已儲存在本機。",

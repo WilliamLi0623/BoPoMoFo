@@ -47,6 +47,31 @@ class _FailingDeleteAuth implements AuthService {
   Future<void> deleteAccount() => Future<void>.error(StateError('private deletion detail'));
 }
 
+class _ReturningSignInAuth implements AuthService {
+  const _ReturningSignInAuth(this.delegate, this.result);
+
+  final AuthService delegate;
+  final User? result;
+
+  @override
+  Stream<AuthState> get authStateChanges => delegate.authStateChanges;
+
+  @override
+  User? get currentUser => delegate.currentUser;
+
+  @override
+  Future<User?> signInWithGoogle() async => result;
+
+  @override
+  Future<User?> signInWithApple() => delegate.signInWithApple();
+
+  @override
+  Future<void> signOut() => delegate.signOut();
+
+  @override
+  Future<void> deleteAccount() => delegate.deleteAccount();
+}
+
 class _ResultSyncService implements SyncService {
   const _ResultSyncService(this.result);
 
@@ -68,6 +93,64 @@ Future<AppLocaleController> _locale(String tag) => AppLocaleController.load(
     );
 
 void main() {
+  for (final localized in [
+    (tag: 'en', signIn: 'Sign in with Google', started: 'Google sign-in started. Complete sign-in to continue.'),
+    (tag: 'zh-Hans', signIn: '使用 Google 登录', started: '已启动 Google 登录。完成登录后即可继续。'),
+    (tag: 'zh-Hant', signIn: '使用 Google 登入', started: '已啟動 Google 登入。完成登入後即可繼續。'),
+  ]) {
+    testWidgets('${localized.tag} pending Google sign-in does not claim completion', (tester) async {
+      final dependencies = await createTestDependencies();
+      addTearDown(dependencies.repository.close);
+      final injected = AppDependencies(
+        configuration: dependencies.configuration,
+        authService: _ReturningSignInAuth(dependencies.authService, null),
+        syncService: dependencies.syncService,
+        learningEngine: dependencies.learningEngine,
+        repository: dependencies.repository,
+      );
+      await tester.pumpWidget(BopomofoApp(dependencies: injected, localeController: await _locale(localized.tag)));
+      await tester.tap(find.byKey(const ValueKey('nav-settings')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(localized.signIn));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('settings-status')),
+        300,
+        scrollable: find.byType(Scrollable).last,
+      );
+
+      expect(find.text(localized.started), findsOneWidget);
+      expect(find.text('Google sign-in complete.'), findsNothing);
+      expect(find.text('Google 登录成功。'), findsNothing);
+      expect(find.text('Google 登入成功。'), findsNothing);
+    });
+  }
+
+  testWidgets('non-null Google sign-in result shows completion', (tester) async {
+    final dependencies = await createTestDependencies();
+    addTearDown(dependencies.repository.close);
+    final injected = AppDependencies(
+      configuration: dependencies.configuration,
+      authService: _ReturningSignInAuth(dependencies.authService, dependencies.authService.currentUser),
+      syncService: dependencies.syncService,
+      learningEngine: dependencies.learningEngine,
+      repository: dependencies.repository,
+    );
+    await tester.pumpWidget(BopomofoApp(dependencies: injected, localeController: await _locale('en')));
+    await tester.tap(find.byKey(const ValueKey('nav-settings')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sign in with Google'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('settings-status')),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+
+    expect(find.text('Google sign-in complete.'), findsOneWidget);
+    expect(find.text('Google sign-in started. Complete sign-in to continue.'), findsNothing);
+  });
+
   final cases = [
     (tag: 'en', practice: 'Keyboard practice', shown: 'Type this symbol: ㄅ', hidden: 'Type the hidden symbol', hide: 'Hide labels', show: 'Show labels', metrics: 'Accuracy 0% · CPM 0', account: 'Account', delete: 'Delete account', confirm: 'Delete account?', local: 'Delete local learning data too', cancel: 'Cancel', failure: 'Could not finish account deletion. Check your account and local progress before retrying.'),
     (tag: 'zh-Hans', practice: '键盘练习', shown: '输入这个符号：ㄅ', hidden: '输入隐藏的符号', hide: '隐藏标签', show: '显示标签', metrics: '准确率 0% · 每分钟字符数 0', account: '账户', delete: '删除账户', confirm: '删除账户？', local: '同时删除本机学习数据', cancel: '取消', failure: '无法完成账户删除。请检查账户和本机学习进度后重试。'),
