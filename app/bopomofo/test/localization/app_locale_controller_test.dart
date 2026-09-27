@@ -58,6 +58,17 @@ void main() {
     expect(controller.locale, hant);
   });
 
+  test('load restores stored English', () async {
+    final store = _MemoryLocalePreferenceStore('en');
+
+    final controller = await AppLocaleController.load(
+      store: store,
+      platformLocales: const [Locale('zh', 'TW')],
+    );
+
+    expect(controller.locale, const Locale('en'));
+  });
+
   test('load ignores an unsupported stored locale and resolves the platform', () async {
     final store = _MemoryLocalePreferenceStore('en-US');
 
@@ -84,6 +95,23 @@ void main() {
     expect(controller.locale, hant);
     expect(persisted, isTrue);
     expect(store.localeTag, 'zh-Hant');
+  });
+
+  test('select updates listeners immediately and persists English as en', () async {
+    final store = _MemoryLocalePreferenceStore();
+    final controller = await AppLocaleController.load(
+      store: store,
+      platformLocales: const [Locale('zh', 'CN')],
+    );
+    var notified = false;
+    controller.addListener(() => notified = true);
+
+    final selection = controller.select(const Locale('en'));
+
+    expect(controller.locale, const Locale('en'));
+    expect(notified, isTrue);
+    expect(await selection, isTrue);
+    expect(store.localeTag, 'en');
   });
 
   test('select returns false when persistence fails and keeps the selected locale', () async {

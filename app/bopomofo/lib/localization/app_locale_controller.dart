@@ -72,12 +72,18 @@ class AppLocaleController extends ChangeNotifier {
   }
 
   static Locale? _localeForTag(String? localeTag) => switch (localeTag) {
+        'en' => const Locale('en'),
         'zh-Hans' => _hansLocale,
         'zh-Hant' => _hantLocale,
         _ => null,
       };
 
   static String? _tagForLocale(Locale locale) {
+    if (locale.languageCode.toLowerCase() == 'en' &&
+        locale.scriptCode == null &&
+        locale.countryCode == null) {
+      return 'en';
+    }
     if (locale.languageCode.toLowerCase() != 'zh') return null;
     return switch (locale.scriptCode?.toLowerCase()) {
       'hans' => 'zh-Hans',
