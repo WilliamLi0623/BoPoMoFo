@@ -81,7 +81,7 @@ void main() {
       find.text('Delete account'),
       300,
       scrollable: find.ancestor(
-        of: find.byKey(const ValueKey('settings-language')),
+        of: find.text('Settings'),
         matching: find.byType(Scrollable),
       ).first,
     );
@@ -91,7 +91,7 @@ void main() {
       find.text('Sync now'),
       -300,
       scrollable: find.ancestor(
-        of: find.byKey(const ValueKey('settings-language')),
+        of: find.text('Settings'),
         matching: find.byType(Scrollable),
       ).first,
     );
@@ -101,7 +101,7 @@ void main() {
       find.textContaining('Sync failed'),
       300,
       scrollable: find.ancestor(
-        of: find.byKey(const ValueKey('settings-language')),
+        of: find.text('Settings'),
         matching: find.byType(Scrollable),
       ).first,
     );
@@ -111,7 +111,7 @@ void main() {
       find.text('Export progress'),
       -300,
       scrollable: find.ancestor(
-        of: find.byKey(const ValueKey('settings-language')),
+        of: find.text('Settings'),
         matching: find.byType(Scrollable),
       ).first,
     );

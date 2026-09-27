@@ -94,9 +94,9 @@ Future<AppLocaleController> _locale(String tag) => AppLocaleController.load(
 
 void main() {
   for (final localized in [
-    (tag: 'en', signIn: 'Sign in with Google', started: 'Google sign-in started. Complete sign-in to continue.'),
-    (tag: 'zh-Hans', signIn: '使用 Google 登录', started: '已启动 Google 登录。完成登录后即可继续。'),
-    (tag: 'zh-Hant', signIn: '使用 Google 登入', started: '已啟動 Google 登入。完成登入後即可繼續。'),
+    (tag: 'en', settings: 'Settings', signIn: 'Sign in with Google', started: 'Google sign-in started. Complete sign-in to continue.'),
+    (tag: 'zh-Hans', settings: '设置', signIn: '使用 Google 登录', started: '已启动 Google 登录。完成登录后即可继续。'),
+    (tag: 'zh-Hant', settings: '設定', signIn: '使用 Google 登入', started: '已啟動 Google 登入。完成登入後即可繼續。'),
   ]) {
     testWidgets('${localized.tag} pending Google sign-in does not claim completion', (tester) async {
       final dependencies = await createTestDependencies();
@@ -117,7 +117,7 @@ void main() {
         find.byKey(const ValueKey('settings-status')),
         300,
         scrollable: find.ancestor(
-          of: find.byKey(const ValueKey('settings-language')),
+          of: find.text(localized.settings),
           matching: find.byType(Scrollable),
         ).first,
       );
@@ -148,7 +148,7 @@ void main() {
       find.byKey(const ValueKey('settings-status')),
       300,
       scrollable: find.ancestor(
-        of: find.byKey(const ValueKey('settings-language')),
+        of: find.text('Settings'),
         matching: find.byType(Scrollable),
       ).first,
     );
@@ -250,7 +250,7 @@ void main() {
         find.byKey(const ValueKey('settings-status')),
         300,
         scrollable: find.ancestor(
-          of: find.byKey(const ValueKey('settings-language')),
+          of: find.text('Settings'),
           matching: find.byType(Scrollable),
         ).first,
       );
