@@ -23,6 +23,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String? _status;
   bool _busy = false;
   bool _languageSaveFailed = false;
+  int _languageSelectionGeneration = 0;
 
   @override
   void dispose() {
@@ -107,8 +108,11 @@ class _SettingsPageState extends State<SettingsPage> {
             ],
             onChanged: (locale) async {
               if (locale == null) return;
+              final generation = ++_languageSelectionGeneration;
               final saved = await widget.localeController.select(locale);
-              if (mounted) setState(() => _languageSaveFailed = !saved);
+              if (mounted && generation == _languageSelectionGeneration) {
+                setState(() => _languageSaveFailed = !saved);
+              }
             },
           ),
           if (_languageSaveFailed)

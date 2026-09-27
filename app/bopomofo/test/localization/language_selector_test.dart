@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bopomofo/app.dart';
 import 'package:bopomofo/localization/app_locale_controller.dart';
 import 'package:bopomofo/localization/locale_preference_store.dart';
@@ -89,6 +91,50 @@ void main() {
     expect(find.text('語言設定可能無法儲存。'), findsOneWidget);
     expect(store.localeTag, isNull);
   });
+
+  testWidgets('late save results cannot change warning for the latest selection', (tester) async {
+    final store = _MemoryStore()..holdWrites = true;
+    final controller = await AppLocaleController.load(
+      store: store,
+      platformLocales: const [Locale('zh', 'CN')],
+    );
+    await tester.pumpWidget(BopomofoApp(
+      dependencies: await createTestDependencies(),
+      localeController: controller,
+    ));
+    await tester.tap(find.byKey(const ValueKey('nav-settings')));
+    await tester.pumpAndSettle();
+
+    Future<void> choose(String nativeName) async {
+      await tester.tap(find.byKey(const ValueKey('settings-language')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(nativeName).last);
+      await tester.pumpAndSettle();
+    }
+
+    await choose('繁體中文');
+    await choose('English');
+    expect(store.pendingWrites.map((write) => write.tag).toList(), [
+      'zh-Hant',
+      'en',
+    ]);
+
+    store.pendingWrites[1].completion.complete();
+    await tester.pumpAndSettle();
+    store.pendingWrites[0].completion.completeError(StateError('older save failed'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('language-save-warning')), findsNothing);
+    expect(controller.locale, const Locale('en'));
+
+    await choose('繁體中文');
+    await choose('English');
+    store.pendingWrites[3].completion.completeError(StateError('current save failed'));
+    await tester.pumpAndSettle();
+    store.pendingWrites[2].completion.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Your language choice may not be saved.'), findsOneWidget);
+    expect(controller.locale, const Locale('en'));
+  });
 }
 
 class _MemoryStore implements LocalePreferenceStore {
@@ -96,6 +142,8 @@ class _MemoryStore implements LocalePreferenceStore {
 
   String? localeTag;
   bool failWrites = false;
+  bool holdWrites = false;
+  final List<({String tag, Completer<void> completion})> pendingWrites = [];
 
   @override
   Future<String?> readLocaleTag() async => localeTag;
@@ -103,6 +151,11 @@ class _MemoryStore implements LocalePreferenceStore {
   @override
   Future<void> writeLocaleTag(String value) async {
     if (failWrites) throw StateError('write failed');
+    if (holdWrites) {
+      final completion = Completer<void>();
+      pendingWrites.add((tag: value, completion: completion));
+      await completion.future;
+    }
     localeTag = value;
   }
 }

@@ -70,3 +70,20 @@ Both jobs ended with `Process completed with exit code 1`. The ruling is to prov
 ## Commit
 
 This report is included in the signed Task 2 commit. The commit hash and post-commit GPG signature verification are provided in the handoff; no push was made.
+
+## Fix round 1: out-of-order language saves
+
+Base: `ae20222818e96f5d39108c2b0c34aba47e92a488`.
+
+Review finding confirmed: each language-selection callback previously wrote `_languageSaveFailed` after its own asynchronous save, allowing an older completion to overwrite feedback for the current choice.
+
+The widget test in `app/bopomofo/test/localization/language_selector_test.dart` now holds two writes and resolves them in reverse order twice: an older failure after a newer success must leave the warning hidden, and an older success after a newer failure must leave the warning visible. The test was added before the production change. In `app/bopomofo/lib/features/settings/settings_page.dart`, a monotonically increasing selection generation now lets only the latest callback change the warning. This fix is limited to the warning state; it does not change the controller's persistence behavior.
+
+| Command | Result |
+| --- | --- |
+| `flutter test test/localization/language_selector_test.dart` from `app/bopomofo`, before and after the fix | Blocked both times, exit 1: `flutter : The term 'flutter' is not recognized as the name of a cmdlet, function, script file, or operable program.` PowerShell reported `CommandNotFoundException`. No red or green test result was observed. |
+| `git diff --check` | Exit 0, no whitespace errors; Git warned that LF will be replaced by CRLF in the two edited Dart files. |
+| `git diff --cached --check` | Passed, exit 0, no output. |
+| `git diff --stat` and `git status --short` | Inspected; only the Settings page, selector test, and this report changed. |
+
+The original Task 2 validation limits still apply. No Flutter test ran locally, and no CI run has validated this fix-round commit.
