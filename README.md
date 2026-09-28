@@ -1,32 +1,68 @@
 # Bopomofo
 
-Learn Bopomofo from what you already know.
+简体中文 | [繁體中文](README.zh-TW.md) | [English](README.en.md)
 
-Bopomofo targets Android, iOS, Windows, macOS, and Linux. The initial shell
-starts in guest mode and keeps the learning entry point local-first. It does
-not create an authenticated session without configured authentication.
+Bopomofo 是一款从已知知识出发学习注音的本机优先应用。应用支持 Android、iOS、Windows、macOS 和 Linux；访客模式会将学习进度保存在本机。
 
-## Baseline commands
+## 环境要求
+
+- Dart SDK：`>=3.6.0 <4.0.0`
+- Flutter SDK：`>=3.27.0`
+- 应用界面支持简体中文（`zh-Hans`）、繁體中文（`zh-Hant`）和 English（`en`）。
+- 原生构建需要对应平台的工具链。GitHub Actions 在 Linux、Android 和 Windows 运行构建；macOS 和 iOS 构建由手动触发的工作流程运行，iOS 使用 `--no-codesign`。
+
+## 安装
+
+在仓库根目录运行：
+
+```text
+dart pub get
+```
+
+在 `app/bopomofo` 目录运行：
 
 ```text
 flutter pub get
-flutter test
-flutter analyze
+```
+
+## 配置
+
+访客模式和本机学习无需 Supabase 或 OAuth 凭据。连接在线服务需要外部 Supabase 项目、OAuth 提供方设置，以及平台回调、重定向和签名配置。环境变量模板见 `.env.example`：`SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEY`、`GOOGLE_OAUTH_CLIENT_ID`、`GOOGLE_OAUTH_REDIRECT_URI`、`APPLE_SERVICE_ID` 和 `APPLE_REDIRECT_URI`。模板不包含凭据。
+
+## 快速开始
+
+在 `app/bopomofo` 目录启动 Windows 桌面应用：
+
+```text
 flutter run -d windows
 ```
 
-For workspace-wide verification, run `./tool/verify_workspace.ps1` from
-PowerShell. GitHub Actions also runs Dart package tests, app analysis, Flutter
-tests, offline/restart and multi-device merge integration scenarios, plus
-native platform builds on matching operating-system runners.
+## 验证
 
-These commands exercise the local shell and do not require Supabase or OAuth
-credentials. Supabase sync, Google OAuth, Apple OAuth, and account deletion
-against a live project are configuration-gated and require the corresponding
-values from `.env.example`, provider setup, and platform redirect/signing
-configuration. The baseline smoke test must remain runnable without them.
+在 `app/bopomofo` 目录生成本地化文件、运行分析和应用测试：
 
-## Scope limits
+```text
+flutter gen-l10n
+flutter analyze
+flutter test
+```
 
-This slice does not add AI, ads, location, contacts, leaderboards, or cloud
-audio-cache features.
+Windows 离线集成测试：
+
+```text
+flutter test integration_test/offline_learning_test.dart -d windows
+```
+
+Linux CI 在 Xvfb 中运行同一集成测试：
+
+```text
+xvfb-run -a flutter test integration_test/offline_learning_test.dart -d linux
+```
+
+在仓库根目录运行工作区验证脚本：
+
+```text
+powershell -ExecutionPolicy Bypass -File tool/verify_workspace.ps1
+```
+
+本机基线测试不依赖在线 Supabase 或 OAuth 服务；连接在线服务以及真实账号删除需要相应的外部设置。

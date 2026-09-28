@@ -2,7 +2,10 @@ import 'package:auth/auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../bootstrap.dart';
+import '../../l10n/app_localizations.dart';
 import 'delete_account_dialog.dart';
+
+enum _DeleteStatus { deleted, deletedWithLocalData, failed }
 
 class AccountPage extends StatefulWidget {
   const AccountPage({required this.authService, required this.repository, this.onReturnedToGuest, super.key});
@@ -16,7 +19,7 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  String? _status;
+  _DeleteStatus? _status;
 
   Future<void> _delete() async {
     final deleteLocalData = await showDialog<bool>(
@@ -33,28 +36,37 @@ class _AccountPageState extends State<AccountPage> {
         returnToGuest();
         if (mounted) Navigator.of(context).pop();
       } else if (mounted) {
-        setState(() => _status = deleteLocalData ? 'Account deleted and local data cleared.' : 'Account deleted. Local progress remains.');
+        setState(() => _status = deleteLocalData ? _DeleteStatus.deletedWithLocalData : _DeleteStatus.deleted);
       }
-    } catch (error) {
-      if (mounted) setState(() => _status = 'Account deletion failed: $error');
+    } catch (_) {
+      if (mounted) setState(() => _status = _DeleteStatus.failed);
     }
   }
 
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) {
+    final labels = AppLocalizations.of(context)!;
+    final statusText = switch (_status) {
+      _DeleteStatus.deleted => labels.accountDeleted,
+      _DeleteStatus.deletedWithLocalData => labels.accountDeletedWithLocalData,
+      _DeleteStatus.failed => labels.accountDeletionUnavailable,
+      null => null,
+    };
+    return ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text('Account', style: Theme.of(context).textTheme.headlineMedium),
+          Text(labels.account, style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 12),
-          Text(widget.authService.currentUser?.email ?? 'Guest / local account'),
+          Text(widget.authService.currentUser?.email ?? labels.guestLocalAccount),
           const SizedBox(height: 20),
           FilledButton.tonalIcon(
             key: const ValueKey('account-delete'),
             onPressed: _delete,
             icon: const Icon(Icons.delete_outline),
-            label: const Text('Delete account'),
+            label: Text(labels.deleteAccount),
           ),
-          if (_status != null) Text(_status!, key: const ValueKey('account-status')),
+          if (statusText != null) Text(statusText, key: const ValueKey('account-status')),
         ],
       );
+  }
 }

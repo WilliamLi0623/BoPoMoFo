@@ -11,7 +11,7 @@ void main() {
 
   testWidgets('onboarding offers the three learning paths', (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies()),
+      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
     );
 
     expect(find.text('Bopomofo'), findsOneWidget);
@@ -24,7 +24,7 @@ void main() {
 
   testWidgets('guest review saves locally and shows the next prompt', (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies()),
+      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
     );
 
     await tester.tap(find.byKey(const ValueKey('path-pinyin')));
@@ -42,7 +42,7 @@ void main() {
 
   testWidgets('dashboard separates mastery projections and due status', (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies()),
+      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
     );
 
     await tester.tap(find.byKey(const ValueKey('nav-dashboard')));
@@ -55,11 +55,15 @@ void main() {
     expect(find.text('Hanzi input'), findsOneWidget);
     expect(find.textContaining('Due reviews'), findsOneWidget);
     expect(find.textContaining('Confusion targets'), findsOneWidget);
+    expect(find.text('Due reviews: 0'), findsOneWidget);
+    expect(find.text('Mastered items: 0'), findsOneWidget);
+    expect(find.text('Confusion targets: 0'), findsOneWidget);
+    expect(find.text('0%'), findsNWidgets(5));
   });
 
   testWidgets('settings exposes account, sync, data, and deletion actions', (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies()),
+      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
     );
 
     await tester.tap(find.byKey(const ValueKey('nav-settings')));
@@ -69,29 +73,58 @@ void main() {
     expect(find.text('Sync now'), findsOneWidget);
     expect(find.text('Export progress'), findsOneWidget);
     expect(find.text('Import progress'), findsOneWidget);
-    expect(find.text('Delete account'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
     expect(find.text('Sign in with Google'), findsOneWidget);
     expect(find.text('Progress is saved locally.'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Delete account'),
+      300,
+      scrollable: find.descendant(
+        of: find.byType(AppScaffold),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
+    expect(find.text('Delete account'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Sync now'),
+      -300,
+      scrollable: find.descendant(
+        of: find.byType(AppScaffold),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
     await tester.tap(find.text('Sync now'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.textContaining('Sync failed'),
+      find.text('Sync is unavailable offline. Local progress remains safe.'),
       300,
-      scrollable: find
-          .ancestor(of: find.text('Settings'), matching: find.byType(Scrollable))
-          .first,
+      scrollable: find.descendant(
+        of: find.byType(AppScaffold),
+        matching: find.byType(Scrollable),
+      ).first,
     );
-    expect(find.textContaining('Sync failed'), findsOneWidget);
+    expect(
+      find.text('Sync is unavailable offline. Local progress remains safe.'),
+      findsOneWidget,
+    );
 
+    await tester.scrollUntilVisible(
+      find.text('Export progress'),
+      -300,
+      scrollable: find.descendant(
+        of: find.byType(AppScaffold),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
     await tester.tap(find.text('Export progress'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Export ready'), findsOneWidget);
   });
 
   testWidgets('named keyboard route is registered', (tester) async {
-    await tester.pumpWidget(BopomofoApp(dependencies: await dependencies()));
+    await tester.pumpWidget(BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()));
     Navigator.of(tester.element(find.byType(AppScaffold))).pushNamed('/keyboard');
     await tester.pumpAndSettle();
 

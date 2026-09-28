@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../bootstrap.dart';
+import '../../l10n/app_localizations.dart';
 
 class LessonPage extends StatelessWidget {
   const LessonPage({required this.learningEngine, required this.repository, required this.path, required this.onReview, super.key});
@@ -10,21 +11,24 @@ class LessonPage extends StatelessWidget {
   final VoidCallback onReview;
 
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) {
+    final labels = AppLocalizations.of(context)!;
+    return ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text('Your first lesson', style: Theme.of(context).textTheme.headlineMedium),
-          const Text('Learning started'),
+          Text(labels.lessonTitle, style: Theme.of(context).textTheme.headlineMedium),
+          Text(labels.lessonStarted),
           const SizedBox(height: 12),
           Text(switch (path) {
-            'sounds' => 'Listen for the shape and sound of each symbol.',
-            'beginner' => 'Build a clear foundation one symbol at a time.',
-            _ => 'Use your Pinyin knowledge as a bridge to Zhuyin.',
+            'sounds' => labels.lessonPathSounds,
+            'beginner' => labels.lessonPathBeginner,
+            _ => labels.lessonPathPinyin,
           }),
           const SizedBox(height: 24),
-          const Card(child: ListTile(title: Text('Today: ㄅ'), subtitle: Text('Recognition · direct mapping'))),
+          Card(child: ListTile(title: Text(labels.lessonToday('ㄅ')), subtitle: Text(labels.lessonRecognitionMapping))),
           const SizedBox(height: 16),
-          FilledButton(onPressed: onReview, child: const Text('Review due items')),
+          FilledButton(onPressed: onReview, child: Text(labels.reviewDueItems)),
         ],
       );
+  }
 }

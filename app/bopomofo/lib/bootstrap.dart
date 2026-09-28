@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:domain/domain.dart';
@@ -7,8 +8,12 @@ import 'package:auth/auth.dart';
 import 'package:persistence/persistence.dart';
 import 'package:learning_engine/learning_engine.dart' show LearningSnapshot;
 import 'package:sync/sync.dart' as sync;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'localization/app_locale_controller.dart';
+import 'localization/locale_preference_store.dart';
+import 'localization/shared_preferences_locale_preference_store.dart';
 
 export 'app.dart' show BopomofoApp;
 
@@ -84,11 +89,37 @@ class UnavailableSyncTransport implements sync.SyncTransport {
 
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LocalePreferenceStore localeStore;
+  try {
+    localeStore = SharedPreferencesLocalePreferenceStore(
+      await SharedPreferences.getInstance(),
+    );
+  } on Object {
+    localeStore = const _UnavailableLocalePreferenceStore();
+  }
+  final localeController = await AppLocaleController.load(
+    store: localeStore,
+    platformLocales: PlatformDispatcher.instance.locales,
+  );
   final dependencies = await AppDependencies.fromConfiguration(
     AppConfiguration.fromEnvironment(),
   );
 
-  runApp(BopomofoApp(dependencies: dependencies));
+  runApp(BopomofoApp(
+    dependencies: dependencies,
+    localeController: localeController,
+  ));
+}
+
+class _UnavailableLocalePreferenceStore implements LocalePreferenceStore {
+  const _UnavailableLocalePreferenceStore();
+
+  @override
+  Future<String?> readLocaleTag() async => null;
+
+  @override
+  Future<void> writeLocaleTag(String localeTag) async =>
+      throw StateError('Locale preferences unavailable');
 }
 
 class AppConfiguration {
