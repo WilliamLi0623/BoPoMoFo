@@ -11,6 +11,7 @@ void main() {
     await tester.pumpWidget(
       BopomofoApp(
         dependencies: await createTestDependencies(),
+        localeController: await createEnglishLocaleController(),
       ),
     );
 

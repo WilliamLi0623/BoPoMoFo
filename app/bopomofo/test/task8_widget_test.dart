@@ -18,13 +18,15 @@ void main() {
       correct: true,
       occurredAt: DateTime.utc(2026, 9, 23),
     ));
-    await tester.pumpWidget(BopomofoApp(dependencies: deps));
+    await tester.pumpWidget(BopomofoApp(dependencies: deps, localeController: await createEnglishLocaleController()));
     await tester.tap(find.byKey(const ValueKey('nav-settings')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('settings-account')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('account-delete')));
     await tester.pumpAndSettle();
+    expect(find.text('Delete account?'), findsOneWidget);
+    expect(find.text('Delete local learning data too'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('confirm-delete-account')));
     await tester.pumpAndSettle();
 
@@ -41,7 +43,7 @@ void main() {
       correct: true,
       occurredAt: DateTime.utc(2026, 9, 23),
     ));
-    await tester.pumpWidget(BopomofoApp(dependencies: deps));
+    await tester.pumpWidget(BopomofoApp(dependencies: deps, localeController: await createEnglishLocaleController()));
     await tester.tap(find.byKey(const ValueKey('nav-settings')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('settings-account')));
@@ -59,7 +61,7 @@ void main() {
 
   testWidgets('named account route returns to guest after deletion', (tester) async {
     final deps = await dependencies();
-    await tester.pumpWidget(BopomofoApp(dependencies: deps));
+    await tester.pumpWidget(BopomofoApp(dependencies: deps, localeController: await createEnglishLocaleController()));
     Navigator.of(tester.element(find.byType(AppScaffold))).pushNamed('/account');
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('account-delete')));
@@ -73,7 +75,7 @@ void main() {
 
   testWidgets('named onboarding route starts the selected lesson', (tester) async {
     final deps = await dependencies();
-    await tester.pumpWidget(BopomofoApp(dependencies: deps));
+    await tester.pumpWidget(BopomofoApp(dependencies: deps, localeController: await createEnglishLocaleController()));
     Navigator.of(tester.element(find.byType(AppScaffold))).pushNamed('/');
     await tester.pumpAndSettle();
 
@@ -93,6 +95,7 @@ void main() {
     final deps = await dependencies();
     await tester.pumpWidget(BopomofoApp(
       dependencies: deps,
+      localeController: await createEnglishLocaleController(),
       onExportReady: (value) => exported = value,
     ));
     await tester.tap(find.byKey(const ValueKey('nav-settings')));
@@ -114,7 +117,7 @@ void main() {
 
   testWidgets('keyboard renders all symbols and reports offline listening fallback', (tester) async {
     final deps = await dependencies();
-    await tester.pumpWidget(BopomofoApp(dependencies: deps));
+    await tester.pumpWidget(BopomofoApp(dependencies: deps, localeController: await createEnglishLocaleController()));
     Navigator.of(tester.element(find.byType(AppScaffold))).pushNamed('/keyboard');
     await tester.pumpAndSettle();
 
