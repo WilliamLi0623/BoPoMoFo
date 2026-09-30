@@ -1,0 +1,24 @@
+{
+  "entries": [
+    {
+      "id": "cns11643-female-ba",
+      "pinyin": "ba",
+      "expectedAnswer": "ㄅㄚ",
+      "assetPath": "assets/audio/F_ba.mp3",
+      "sourceArchiveEntry": "female.zip/F_ba.mp3",
+      "attribution": "Ministry of Digital Affairs / CNS11643 Full Character Library",
+      "sourceUrl": "https://www.cns11643.gov.tw/opendata/Voice.zip",
+      "license": "Government Open Data License, Version 1.0"
+    },
+    {
+      "id": "cns11643-female-ma",
+      "pinyin": "ma",
+      "expectedAnswer": "ㄇㄚ",
+      "assetPath": "assets/audio/F_ma.mp3",
+      "sourceArchiveEntry": "female.zip/F_ma.mp3",
+      "attribution": "Ministry of Digital Affairs / CNS11643 Full Character Library",
+      "sourceUrl": "https://www.cns11643.gov.tw/opendata/Voice.zip",
+      "license": "Government Open Data License, Version 1.0"
+    }
+  ]
+}
