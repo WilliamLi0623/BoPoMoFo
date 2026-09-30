@@ -9,6 +9,8 @@ dependencies:
     path: ../domain
   content:
     path: ../content
+  phonology:
+    path: ../phonology
   srs:
     path: ../srs
 
