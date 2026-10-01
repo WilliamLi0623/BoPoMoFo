@@ -295,6 +295,89 @@ void main() {
     await repository.close();
   });
 
+  test('recorded confusion prioritizes prompt by stable item ID', () async {
+    final repository = await LocalLearningRepository.inMemory();
+    final prompt = QuizPrompt(
+      id: 'starter-ba-recognition',
+      itemId: 'starter-ba',
+      skill: Skill.recognition,
+      type: QuizType.recognition,
+      promptKey: 'quiz.recognition',
+      promptArguments: const {},
+      expectedAnswer: 'ba',
+      options: const ['ba', 'pa'],
+    );
+    var session = QuizSession(
+      id: 'confusion-session',
+      contentVersion: 'starter-v1',
+      prompts: [
+        prompt,
+        QuizPrompt(
+          id: 'starter-ba-recall',
+          itemId: 'starter-ba',
+          skill: Skill.production,
+          type: QuizType.recall,
+          promptKey: 'quiz.recall',
+          promptArguments: const {},
+          expectedAnswer: 'ba',
+          options: const ['ba', 'pa'],
+        ),
+      ],
+      currentIndex: 0,
+      currentQuestionStartedAt: DateTime.utc(2026, 9, 30),
+      currentAnswer: null,
+      correctCount: 0,
+      answeredCount: 0,
+      status: QuizSessionStatus.active,
+    );
+    try {
+      await repository.saveNewSession(session);
+      for (var index = 0; index < 2; index++) {
+        await repository.submitAnswer(
+          sessionId: session.id,
+          expectedIndex: index,
+          response: 'pa',
+          correct: false,
+          occurredAt: DateTime.utc(2026, 9, 30, 0, index + 1),
+          latencyMs: 250,
+        );
+        if (index == 0) {
+          session = await repository.continueSession(
+            sessionId: session.id,
+            expectedIndex: index,
+          );
+        }
+      }
+
+      final persisted = await repository.snapshot();
+      expect(persisted.confusionTargets.single.expected, 'starter-ba');
+      expect(prompt.itemId, isNot(prompt.expectedAnswer));
+
+      final queue = nextPrompts(
+        LearningSnapshot(confusionTargets: persisted.confusionTargets),
+        DateTime.utc(2026, 10, 1),
+        2,
+        starterPrompts: [
+          QuizPrompt(
+            id: 'starter-pa-recognition',
+            itemId: 'starter-pa',
+            skill: Skill.recognition,
+            type: QuizType.recognition,
+            promptKey: 'quiz.recognition',
+            promptArguments: const {},
+            expectedAnswer: 'pa',
+            options: const ['pa', 'ba'],
+          ),
+          prompt,
+        ],
+      );
+
+      expect(queue.first.itemId, 'starter-ba');
+    } finally {
+      await repository.close();
+    }
+  });
+
   test('reopening the SQLite database recovers events and projections',
       () async {
     final directory =

@@ -170,9 +170,8 @@ List<QuizPrompt> nextPrompts(LearningSnapshot snapshot, DateTime now, int limit,
     final dueAt = due[itemKey];
     if (dueAt != null) {
       ranked.add(_RankedPrompt(prompt, 0, dueAt.microsecondsSinceEpoch, index));
-    } else if (confusion.containsKey(prompt.expectedAnswer)) {
-      ranked.add(
-          _RankedPrompt(prompt, 1, -confusion[prompt.expectedAnswer]!, index));
+    } else if (confusion.containsKey(prompt.itemId)) {
+      ranked.add(_RankedPrompt(prompt, 1, -confusion[prompt.itemId]!, index));
     } else {
       ranked.add(_RankedPrompt(prompt, 2,
           newItems[itemKey] ?? snapshot.unlockedItems.length + index, index));
