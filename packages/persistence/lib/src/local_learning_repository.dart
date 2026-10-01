@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:domain/domain.dart';
 import 'package:learning_engine/learning_engine.dart';
@@ -9,7 +10,9 @@ import 'daos/projections_dao.dart';
 import 'database.dart';
 import 'export_import.dart';
 
-class LocalLearningRepository {
+class LocalLearningRepository implements QuizSessionStore {
+  static const _activeQuizSessionKey = 'quiz.activeSession';
+  static const _supportedQuizContentVersion = 'starter-v1';
   final LocalDatabase database;
   final Scheduler scheduler;
   final String userId;
@@ -38,6 +41,169 @@ class LocalLearningRepository {
       deviceId: deviceId,
     );
   }
+
+  @override
+  Future<QuizSession?> loadActiveSession({
+    bool Function(QuizPrompt)? isPromptAvailable,
+  }) async {
+    final result = await database.transaction(
+      (tx) => _readActiveSession(tx, isPromptAvailable: isPromptAvailable),
+    );
+    // Throw outside the transaction so discarding the session is not rolled back.
+    if (result.discarded) throw const QuizSessionRecoveryRequired();
+    return result.session;
+  }
+
+  @override
+  Future<void> saveNewSession(QuizSession session) async {
+    if (session.status != QuizSessionStatus.active ||
+        session.contentVersion != _supportedQuizContentVersion) {
+      throw const FormatException('Unsupported or inactive quiz session');
+    }
+    if (session.currentIndex != 0 ||
+        session.currentAnswer != null ||
+        session.answeredCount != 0 ||
+        session.correctCount != 0) {
+      throw const FormatException('A new quiz session must be unanswered');
+    }
+    await database.transaction((tx) async {
+      if ((await _readActiveSession(tx)).session != null) {
+        throw const QuizSessionConflict(
+            'An active quiz session already exists');
+      }
+      await _writeSession(tx, session);
+    });
+  }
+
+  @override
+  Future<QuizSession> submitAnswer({
+    required String sessionId,
+    required int expectedIndex,
+    required String response,
+    required bool correct,
+    required DateTime occurredAt,
+    required int latencyMs,
+  }) async {
+    final updated = await database.transaction((tx) async {
+      final session = (await _readActiveSession(tx)).session;
+      if (session == null ||
+          session.id != sessionId ||
+          session.currentIndex != expectedIndex ||
+          session.currentAnswer != null) {
+        throw const QuizSessionConflict('Stale quiz answer');
+      }
+      if (latencyMs < 0 ||
+          correct != session.currentPrompt!.evaluate(response)) {
+        throw ArgumentError('Invalid quiz answer');
+      }
+      final prompt = session.currentPrompt!;
+      final answer = QuizAnswer(
+        response: response,
+        correct: correct,
+        occurredAt: occurredAt.toUtc(),
+        latencyMs: latencyMs,
+      );
+      final event = LearningEvent(
+        eventId: await tx.allocateEventId(deviceId),
+        userId: userId,
+        deviceId: deviceId,
+        itemId: prompt.itemId,
+        skill: prompt.skill,
+        occurredAt: answer.occurredAt,
+        correct: correct,
+        latencyMs: latencyMs,
+        hintCount: 0,
+        retryCount: 0,
+        response: response,
+      );
+      await _appendEventInTransaction(tx, event);
+      final answered = session.copyWith(
+        currentAnswer: answer,
+        correctCount: session.correctCount + (correct ? 1 : 0),
+        answeredCount: session.answeredCount + 1,
+      );
+      await _writeSession(tx, answered);
+      return answered;
+    });
+    await _publishDashboard();
+    return updated;
+  }
+
+  @override
+  Future<QuizSession> continueSession({
+    required String sessionId,
+    required int expectedIndex,
+  }) =>
+      database.transaction((tx) async {
+        final session = (await _readActiveSession(tx)).session;
+        if (session == null ||
+            session.id != sessionId ||
+            session.currentIndex != expectedIndex ||
+            session.currentAnswer == null) {
+          throw const QuizSessionConflict('Stale quiz continuation');
+        }
+        final isLast = expectedIndex == session.prompts.length - 1;
+        final next = session.copyWith(
+          currentIndex: expectedIndex + 1,
+          currentQuestionStartedAt: DateTime.now().toUtc(),
+          clearAnswer: true,
+          status:
+              isLast ? QuizSessionStatus.completed : QuizSessionStatus.active,
+        );
+        await _writeSession(tx, next);
+        return next;
+      });
+
+  Future<({QuizSession? session, bool discarded})> _readActiveSession(
+    LocalDatabase tx, {
+    bool Function(QuizPrompt)? isPromptAvailable,
+  }) async {
+    final rows = await tx.select(
+      'SELECT value FROM settings WHERE key = ?',
+      [_activeQuizSessionKey],
+    );
+    if (rows.isEmpty) return (session: null, discarded: false);
+    QuizSession session;
+    try {
+      final decoded = jsonDecode(rows.single['value']! as String);
+      session = QuizSession.fromJson(decoded as Map<String, dynamic>);
+      if (session.contentVersion != _supportedQuizContentVersion) {
+        throw const FormatException('Unsupported quiz content version');
+      }
+    } on FormatException {
+      await tx.execute(
+        'DELETE FROM settings WHERE key = ?',
+        [_activeQuizSessionKey],
+      );
+      return (session: null, discarded: true);
+    } on TypeError {
+      await tx.execute(
+        'DELETE FROM settings WHERE key = ?',
+        [_activeQuizSessionKey],
+      );
+      return (session: null, discarded: true);
+    }
+    if (session.status != QuizSessionStatus.active) {
+      return (session: null, discarded: false);
+    }
+    // The app owns bundled-content knowledge; persistence owns atomic discard.
+    if (isPromptAvailable != null &&
+        !session.prompts.every(isPromptAvailable)) {
+      await tx.execute(
+        'DELETE FROM settings WHERE key = ?',
+        [_activeQuizSessionKey],
+      );
+      return (session: null, discarded: true);
+    }
+    return (session: session, discarded: false);
+  }
+
+  Future<void> _writeSession(LocalDatabase tx, QuizSession session) =>
+      tx.execute(
+        '''INSERT INTO settings (key, value) VALUES (?, ?)
+           ON CONFLICT(key) DO UPDATE SET value = excluded.value''',
+        [_activeQuizSessionKey, jsonEncode(session.toJson())],
+      );
 
   Future<LearningEvent> appendEvent(LearningEvent event) async {
     LearningEvent result = event;
@@ -188,7 +354,8 @@ class LocalLearningRepository {
     final states = <String, ReviewState>{};
     for (final event in await txEvents.all()) {
       final key = '${event.itemId}|${event.skill.name}';
-      final state = states[key] ?? ReviewState(
+      final state = states[key] ??
+          ReviewState(
             itemId: event.itemId,
             skill: event.skill,
             difficulty: 5,
@@ -217,8 +384,11 @@ class LocalLearningRepository {
     final snapshot = await projections.snapshot();
     final now = DateTime.now().toUtc();
     return DashboardSnapshot(
-      dueCount: snapshot.reviewStates.where((state) => !state.dueAt.isAfter(now)).length,
-      masteredCount: snapshot.reviewStates.where((state) => state.stability >= 21).length,
+      dueCount: snapshot.reviewStates
+          .where((state) => !state.dueAt.isAfter(now))
+          .length,
+      masteredCount:
+          snapshot.reviewStates.where((state) => state.stability >= 21).length,
     );
   }
 
