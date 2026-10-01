@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:auth/auth.dart';
@@ -29,97 +30,139 @@ void main() {
     final databasePath =
         '${directory.path}${Platform.pathSeparator}learning.sqlite';
     final guestStore = InMemoryGuestIdStore();
-    final prompts = await _fiveTypeQueue();
-    var dependencies = await _dependencies(databasePath, guestStore);
-    final firstRepo = dependencies.repository.local;
-    final sync = dependencies.syncService as LocalSyncService;
-    final firstPlayer = _SilentAudioPromptPlayer();
-    final firstFactory = _sessionFactory(firstRepo, prompts, firstPlayer);
-    var syncServices = <LocalSyncService>[sync];
-    var repositories = <LocalLearningRepository>[firstRepo];
+    final manifest = await AudioAssetManifest.load(rootBundle);
+    final prompts = await _fiveTypeQueue(manifest);
+    final expectedAudioSource = manifest
+        .assetPathForId(prompts[3].audioAssetId!)!
+        .substring('assets/'.length);
+    final syncServices = <LocalSyncService>[];
+    final repositories = <LocalLearningRepository>[];
+    final firstPlayer = OfflineAudioPromptPlayer(
+      manifest: manifest,
+      output: _SilentCapturingAudioOutput(),
+    );
+    var deniedHttpClientCreations = 0;
 
     try {
-      await tester.pumpWidget(BopomofoApp(
-        dependencies: dependencies,
-        localeController: await createEnglishLocaleController(),
-        reviewSessionFactory: firstFactory,
-      ));
-      await _enterReview(tester);
-      await _answerCurrent(tester, prompts.first);
-      expect(find.byKey(const ValueKey('quiz-answer-feedback')), findsOneWidget);
-      expect(find.byKey(const ValueKey('quiz-progress')), findsOneWidget);
-      expect((await firstRepo.loadActiveSession())!.currentAnswer!.response,
-          prompts.first.expectedAnswer);
-      expect((await firstRepo.events.all()), hasLength(1));
-      expect((await sync.syncNow()).status, SyncStatus.offline);
+      await HttpOverrides.runZoned(
+        () async {
+          var dependencies = await _dependencies(databasePath, guestStore);
+          final firstRepo = dependencies.repository.local;
+          repositories.add(firstRepo);
+          final sync = dependencies.syncService as LocalSyncService;
+          syncServices.add(sync);
+          final firstFactory = _sessionFactory(firstRepo, prompts, firstPlayer);
+          await tester.pumpWidget(BopomofoApp(
+            dependencies: dependencies,
+            localeController: await createEnglishLocaleController(),
+            reviewSessionFactory: firstFactory,
+          ));
+          await _enterReview(tester);
+          await _answerCurrent(tester, prompts.first);
+          expect(find.byKey(const ValueKey('quiz-answer-feedback')),
+              findsOneWidget);
+          expect(find.byKey(const ValueKey('quiz-progress')), findsOneWidget);
+          expect((await firstRepo.loadActiveSession())!.currentAnswer!.response,
+              prompts.first.expectedAnswer);
+          expect((await firstRepo.events.all()), hasLength(1));
+          expect((await sync.syncNow()).status, SyncStatus.offline);
 
-      // A new widget tree, dependency graph, repository, database connection,
-      // coordinator and silent player simulate an app process restart.
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAndSettle();
-      await sync.dispose();
-      repositories.remove(firstRepo);
-      await firstRepo.close();
-      dependencies = await _dependencies(databasePath, guestStore);
-      final restartedRepo = dependencies.repository.local;
-      repositories.add(restartedRepo);
-      final restartedSync = dependencies.syncService as LocalSyncService;
-      syncServices.add(restartedSync);
-      final restartedPlayer = _SilentAudioPromptPlayer();
-      await tester.pumpWidget(BopomofoApp(
-        dependencies: dependencies,
-        localeController: await createEnglishLocaleController(),
-        reviewSessionFactory:
-            _sessionFactory(restartedRepo, prompts, restartedPlayer),
-      ));
-      await _enterReview(tester);
-      expect(find.byKey(const ValueKey('quiz-progress')), findsOneWidget);
-      expect(find.byKey(const ValueKey('quiz-answer-feedback')), findsOneWidget);
-      expect(find.byKey(const ValueKey('quiz-saved-response')), findsOneWidget);
-      final progressContext = tester.element(
-          find.byKey(const ValueKey('quiz-progress')));
-      expect(
-        tester.widget<Text>(find.byKey(const ValueKey('quiz-progress'))).data,
-        AppLocalizations.of(progressContext)!.quizSessionProgress(1, 5),
+          // Recreate app dependencies and the SQLite connection while saved
+          // feedback is pending Continue.
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pumpAndSettle();
+          await sync.dispose();
+          syncServices.remove(sync);
+          repositories.remove(firstRepo);
+          await firstRepo.close();
+          dependencies = await _dependencies(databasePath, guestStore);
+          final restartedRepo = dependencies.repository.local;
+          repositories.add(restartedRepo);
+          final restartedSync = dependencies.syncService as LocalSyncService;
+          syncServices.add(restartedSync);
+          final restartedOutput = _SilentCapturingAudioOutput();
+          final restartedPlayer = OfflineAudioPromptPlayer(
+            manifest: manifest,
+            output: restartedOutput,
+          );
+          await tester.pumpWidget(BopomofoApp(
+            dependencies: dependencies,
+            localeController: await createEnglishLocaleController(),
+            reviewSessionFactory:
+                _sessionFactory(restartedRepo, prompts, restartedPlayer),
+          ));
+          await _enterReview(tester);
+          expect(find.byKey(const ValueKey('quiz-progress')), findsOneWidget);
+          expect(find.byKey(const ValueKey('quiz-answer-feedback')),
+              findsOneWidget);
+          expect(find.byKey(const ValueKey('quiz-saved-response')),
+              findsOneWidget);
+          final progressContext =
+              tester.element(find.byKey(const ValueKey('quiz-progress')));
+          expect(
+            tester
+                .widget<Text>(find.byKey(const ValueKey('quiz-progress')))
+                .data,
+            AppLocalizations.of(progressContext)!.quizSessionProgress(1, 5),
+          );
+          final restored = await restartedRepo.loadActiveSession();
+          expect(restored!.currentPrompt!.id, prompts.first.id);
+          expect(restored.currentIndex, 0);
+          expect(restored.answeredCount, 1);
+          expect(restored.correctCount, 1);
+          expect(
+            restored.currentAnswer!.response,
+            prompts.first.expectedAnswer,
+          );
+          expect((await restartedRepo.events.all()), hasLength(1));
+
+          await tester.tap(find.byKey(const ValueKey('quiz-continue')));
+          await tester.pumpAndSettle();
+          for (final prompt in prompts.skip(1)) {
+            expect((await restartedRepo.loadActiveSession())!.currentPrompt!.id,
+                prompt.id);
+            await _answerCurrent(
+              tester,
+              prompt,
+              audioOutput: restartedOutput,
+              expectedAudioAssetId: prompts[3].audioAssetId,
+              expectedAudioSource: expectedAudioSource,
+            );
+            expect(find.byKey(const ValueKey('quiz-answer-feedback')),
+                findsOneWidget);
+            await tester.tap(find.byKey(const ValueKey('quiz-continue')));
+            await tester.pumpAndSettle();
+          }
+
+          final summaryFinder = find.byKey(const ValueKey('quiz-completion'));
+          expect(summaryFinder, findsOneWidget);
+          final summaryContext = tester.element(summaryFinder);
+          expect(
+            tester.widget<Text>(summaryFinder).data,
+            AppLocalizations.of(summaryContext)!.quizCompletionSummary(5, 5),
+          );
+          final completed = await restartedRepo.loadActiveSession();
+          expect(completed, isNull);
+          final events = await restartedRepo.events.all();
+          expect(events, hasLength(5));
+          expect(events.every((event) => event.correct), isTrue);
+          expect(events.map((event) => event.itemId).toSet(),
+              prompts.map((prompt) => prompt.itemId).toSet());
+          final history = await restartedRepo.snapshot();
+          expect(history.reviewStates, hasLength(5));
+          expect(
+            history.reviewStates.every((state) => state.reps == 1),
+            isTrue,
+          );
+          expect(restartedOutput.requestedPaths, [expectedAudioSource]);
+          expect(restartedOutput.completedCount, 1);
+          expect(deniedHttpClientCreations, 0);
+        },
+        createHttpClient: (context) {
+          deniedHttpClientCreations++;
+          throw StateError('Network access is disabled for this test.');
+        },
       );
-      final restored = await restartedRepo.loadActiveSession();
-      expect(restored!.currentPrompt!.id, prompts.first.id);
-      expect(restored.currentIndex, 0);
-      expect(restored.answeredCount, 1);
-      expect(restored.correctCount, 1);
-      expect(restored.currentAnswer!.response, prompts.first.expectedAnswer);
-      expect((await restartedRepo.events.all()), hasLength(1));
-
-      await tester.tap(find.byKey(const ValueKey('quiz-continue')));
-      await tester.pumpAndSettle();
-      for (final prompt in prompts.skip(1)) {
-        expect((await restartedRepo.loadActiveSession())!.currentPrompt!.id,
-            prompt.id);
-        await _answerCurrent(tester, prompt, player: restartedPlayer);
-        expect(find.byKey(const ValueKey('quiz-answer-feedback')), findsOneWidget);
-        await tester.tap(find.byKey(const ValueKey('quiz-continue')));
-        await tester.pumpAndSettle();
-      }
-
-      final summaryFinder = find.byKey(const ValueKey('quiz-completion'));
-      expect(summaryFinder, findsOneWidget);
-      final summaryContext = tester.element(summaryFinder);
-      expect(
-        tester.widget<Text>(summaryFinder).data,
-        AppLocalizations.of(summaryContext)!.quizCompletionSummary(5, 5),
-      );
-      final completed = await restartedRepo.loadActiveSession();
-      expect(completed, isNull);
-      final events = await restartedRepo.events.all();
-      expect(events, hasLength(5));
-      expect(events.every((event) => event.correct), isTrue);
-      expect(events.map((event) => event.itemId).toSet(),
-          prompts.map((prompt) => prompt.itemId).toSet());
-      final history = await restartedRepo.snapshot();
-      expect(history.reviewStates, hasLength(5));
-      expect(history.reviewStates.every((state) => state.reps == 1), isTrue);
-      expect(restartedPlayer.playedIds, [prompts[3].audioAssetId]);
-      expect(restartedPlayer.completions, 1);
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
       for (final service in syncServices) {
@@ -132,7 +175,8 @@ void main() {
     }
   });
 
-  testWidgets('changing language keeps the recorded review in the same repository',
+  testWidgets(
+      'changing language keeps the recorded review in the same repository',
       (tester) async {
     final dependencies = await createTestDependencies();
     final repository = dependencies.repository;
@@ -151,15 +195,17 @@ void main() {
     final app = BopomofoApp(
       dependencies: dependencies,
       localeController: localeController,
+      reviewSessionFactory: createTestReviewSessionFactory(store: repository),
     );
     await tester.pumpWidget(app);
     await tester.tap(find.byKey(const ValueKey('path-sounds')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Review due items'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('review-answer-correct')));
+    await tester.tap(find.byKey(const ValueKey('quiz-option-ba')));
     await tester.pumpAndSettle();
-    expect(find.text('Saved locally'), findsOneWidget);
+    expect(find.byKey(const ValueKey('quiz-answer-feedback')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quiz-saved-response')), findsOneWidget);
     expect((await repository.snapshot()).reviewStates.single.reps, 1);
     expect((await local.pendingEvents()), hasLength(1));
 
@@ -205,8 +251,7 @@ void main() {
   });
 }
 
-Future<List<QuizPrompt>> _fiveTypeQueue() async {
-  final manifest = await AudioAssetManifest.load(rootBundle);
+Future<List<QuizPrompt>> _fiveTypeQueue(AudioAssetManifest manifest) async {
   final entry = manifest.entries.first;
   final bytes = await rootBundle.load(entry.assetPath);
   expect(bytes.lengthInBytes, greaterThan(0));
@@ -291,7 +336,7 @@ Future<AppDependencies> _dependencies(
 ReviewSessionFactory _sessionFactory(
   LocalLearningRepository repository,
   List<QuizPrompt> prompts,
-  _SilentAudioPromptPlayer player,
+  AudioPromptPlayer player,
 ) =>
     () async => ReviewSessionRuntime(
           coordinator: QuizSessionCoordinator(
@@ -318,51 +363,83 @@ Future<void> _enterReview(WidgetTester tester) async {
 Future<void> _answerCurrent(
   WidgetTester tester,
   QuizPrompt prompt, {
-  _SilentAudioPromptPlayer? player,
+  _SilentCapturingAudioOutput? audioOutput,
+  String? expectedAudioAssetId,
+  String? expectedAudioSource,
 }) async {
   switch (prompt.type) {
     case QuizType.recognition:
-      await tester.tap(find.byKey(ValueKey('quiz-option-${prompt.expectedAnswer}')));
+      await tester
+          .tap(find.byKey(ValueKey('quiz-option-${prompt.expectedAnswer}')));
     case QuizType.recall:
-      await tester.enterText(
-          find.byKey(const ValueKey('quiz-recall-input')), prompt.expectedAnswer);
+      await tester.enterText(find.byKey(const ValueKey('quiz-recall-input')),
+          prompt.expectedAnswer);
       await tester.tap(find.byKey(const ValueKey('quiz-submit')));
     case QuizType.composition:
-      for (final glyph in prompt.expectedAnswer.runes.map(String.fromCharCode)) {
+      for (final glyph
+          in prompt.expectedAnswer.runes.map(String.fromCharCode)) {
         await tester.tap(find.byKey(ValueKey('quiz-tile-$glyph')));
       }
       await tester.tap(find.byKey(const ValueKey('quiz-submit')));
     case QuizType.listening:
       final assetId = prompt.audioAssetId!;
       await tester.tap(find.byKey(const ValueKey('quiz-play-audio')));
+      await tester.pump();
+      final requestedPath = await audioOutput!.started.future;
+      expect(assetId, expectedAudioAssetId);
+      expect(requestedPath, expectedAudioSource);
+      expect(audioOutput.completedCount, 0);
+      expect(
+        tester
+            .widget<FilledButton>(find.byKey(const ValueKey('quiz-play-audio')))
+            .onPressed,
+        isNull,
+      );
+      audioOutput.completePlayback();
       await tester.pumpAndSettle();
-      expect(player!.playedIds, contains(assetId));
-      expect(player.completions, 1);
-      expect(tester.widget<FilledButton>(
-              find.byKey(const ValueKey('quiz-play-audio'))).onPressed,
+      expect(audioOutput.completedCount, 1);
+      expect(
+          tester
+              .widget<FilledButton>(
+                  find.byKey(const ValueKey('quiz-play-audio')))
+              .onPressed,
           isNotNull);
-      await tester.tap(find.byKey(ValueKey('quiz-option-${prompt.expectedAnswer}')));
+      await tester
+          .tap(find.byKey(ValueKey('quiz-option-${prompt.expectedAnswer}')));
     case QuizType.keyboard:
-      final mapping = phonology.symbols.firstWhere(
-          (symbol) => symbol.glyph == prompt.expectedAnswer);
+      final mapping = phonology.symbols
+          .firstWhere((symbol) => symbol.glyph == prompt.expectedAnswer);
       await tester.tap(find.byKey(ValueKey('quiz-key-${mapping.keyboardKey}')));
   }
   await tester.pumpAndSettle();
 }
 
-class _SilentAudioPromptPlayer implements AudioPromptPlayer {
-  final playedIds = <String>[];
-  int completions = 0;
+class _SilentCapturingAudioOutput implements AudioPromptAudioOutput {
+  final started = Completer<String>();
+  final _playbackFinished = Completer<void>();
+  final requestedPaths = <String>[];
+  int completedCount = 0;
 
   @override
-  Future<void> play(String assetId) async {
-    playedIds.add(assetId);
-    await Future<void>.value();
-    completions++;
+  Future<void> playAsset(String assetPath) {
+    requestedPaths.add(assetPath);
+    if (!started.isCompleted) started.complete(assetPath);
+    return _playbackFinished.future.then((_) {
+      completedCount++;
+    });
+  }
+
+  void completePlayback() {
+    if (!_playbackFinished.isCompleted) _playbackFinished.complete();
   }
 
   @override
-  Future<void> dispose() async {}
+  Future<void> stop() async {}
+
+  @override
+  Future<void> dispose() async {
+    if (!_playbackFinished.isCompleted) _playbackFinished.complete();
+  }
 }
 
 class _MemoryLocalePreferenceStore implements LocalePreferenceStore {
