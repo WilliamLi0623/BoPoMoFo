@@ -6,6 +6,7 @@ import 'package:bopomofo/localization/locale_preference_store.dart';
 import 'package:flutter/widgets.dart';
 import 'package:bopomofo/features/review/review_page.dart';
 import 'package:bopomofo/features/review/audio_prompt_player.dart';
+import 'package:bopomofo/features/review/audio_asset_manifest.dart';
 import 'package:domain/domain.dart';
 import 'package:learning_engine/learning_engine.dart';
 
@@ -67,6 +68,7 @@ List<QuizPrompt> testReviewPrompts() => [
 ReviewSessionFactory createTestReviewSessionFactory({
   required QuizSessionStore store,
   List<QuizPrompt>? prompts,
+  AudioAssetManifest? manifest,
 }) =>
     () async => ReviewSessionRuntime(
           coordinator: QuizSessionCoordinator(
@@ -76,6 +78,11 @@ ReviewSessionFactory createTestReviewSessionFactory({
                 DateTime.now().microsecondsSinceEpoch.toString(),
             now: () => DateTime.now().toUtc(),
             contentVersion: 'starter-v1',
+            isPromptAvailable: manifest == null
+                ? null
+                : (prompt) =>
+                    prompt.audioAssetId == null ||
+                    manifest.assetPathForId(prompt.audioAssetId!) != null,
           ),
           audioPlayer: FakeAudioPromptPlayer(),
         );

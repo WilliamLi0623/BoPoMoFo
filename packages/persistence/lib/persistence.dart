@@ -7,5 +7,6 @@ export 'package:learning_engine/learning_engine.dart'
         QuizAnswer,
         QuizSession,
         QuizSessionConflict,
+        QuizSessionRecoveryRequired,
         QuizSessionStatus,
         QuizSessionStore;

@@ -10,6 +10,7 @@ import 'package:persistence/persistence.dart';
 import 'package:learning_engine/learning_engine.dart'
     show
         LearningSnapshot,
+        QuizPrompt,
         QuizSession,
         QuizSessionStore,
         QuizSessionCoordinator,
@@ -67,7 +68,10 @@ class AppLearningRepository implements LearningRepository, QuizSessionStore {
   Future<LearningSnapshot> snapshot() => local.snapshot();
 
   @override
-  Future<QuizSession?> loadActiveSession() => local.loadActiveSession();
+  Future<QuizSession?> loadActiveSession({
+    bool Function(QuizPrompt)? isPromptAvailable,
+  }) =>
+      local.loadActiveSession(isPromptAvailable: isPromptAvailable);
 
   @override
   Future<void> saveNewSession(QuizSession session) =>
@@ -243,6 +247,9 @@ class AppDependencies {
             DateTime.now().toUtc().microsecondsSinceEpoch.toString(),
         now: () => DateTime.now().toUtc(),
         contentVersion: 'starter-v1',
+        isPromptAvailable: (prompt) =>
+            prompt.audioAssetId == null ||
+            manifest.assetPathForId(prompt.audioAssetId!) != null,
       ),
       audioPlayer: OfflineAudioPromptPlayer(manifest: manifest),
     );

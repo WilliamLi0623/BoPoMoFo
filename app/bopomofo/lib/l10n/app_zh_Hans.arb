@@ -112,6 +112,7 @@
   "quizAnswerIncorrect": "答案已保存到本机。继续练习。",
   "quizContinue": "继续",
   "quizStorageFailure": "无法保存或载入复习进度。请重试。",
+  "quizSessionRecovery": "无法恢复上次的复习。你的学习记录已保留。",
   "quizRetry": "重试",
   "quizNoEligibleQuestions": "目前没有可复习的题目。",
   "quizCompletionSummary": "复习完成：答对 {correct} / {total} 题。",

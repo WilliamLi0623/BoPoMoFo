@@ -43,8 +43,16 @@ class LocalLearningRepository implements QuizSessionStore {
   }
 
   @override
-  Future<QuizSession?> loadActiveSession() =>
-      database.transaction((tx) => _readActiveSession(tx));
+  Future<QuizSession?> loadActiveSession({
+    bool Function(QuizPrompt)? isPromptAvailable,
+  }) async {
+    final result = await database.transaction(
+      (tx) => _readActiveSession(tx, isPromptAvailable: isPromptAvailable),
+    );
+    // Throw outside the transaction so discarding the session is not rolled back.
+    if (result.discarded) throw const QuizSessionRecoveryRequired();
+    return result.session;
+  }
 
   @override
   Future<void> saveNewSession(QuizSession session) async {
@@ -59,7 +67,7 @@ class LocalLearningRepository implements QuizSessionStore {
       throw const FormatException('A new quiz session must be unanswered');
     }
     await database.transaction((tx) async {
-      if (await _readActiveSession(tx) != null) {
+      if ((await _readActiveSession(tx)).session != null) {
         throw const QuizSessionConflict(
             'An active quiz session already exists');
       }
@@ -77,7 +85,7 @@ class LocalLearningRepository implements QuizSessionStore {
     required int latencyMs,
   }) async {
     final updated = await database.transaction((tx) async {
-      final session = await _readActiveSession(tx);
+      final session = (await _readActiveSession(tx)).session;
       if (session == null ||
           session.id != sessionId ||
           session.currentIndex != expectedIndex ||
@@ -127,7 +135,7 @@ class LocalLearningRepository implements QuizSessionStore {
     required int expectedIndex,
   }) =>
       database.transaction((tx) async {
-        final session = await _readActiveSession(tx);
+        final session = (await _readActiveSession(tx)).session;
         if (session == null ||
             session.id != sessionId ||
             session.currentIndex != expectedIndex ||
@@ -146,32 +154,48 @@ class LocalLearningRepository implements QuizSessionStore {
         return next;
       });
 
-  Future<QuizSession?> _readActiveSession(LocalDatabase tx) async {
+  Future<({QuizSession? session, bool discarded})> _readActiveSession(
+    LocalDatabase tx, {
+    bool Function(QuizPrompt)? isPromptAvailable,
+  }) async {
     final rows = await tx.select(
       'SELECT value FROM settings WHERE key = ?',
       [_activeQuizSessionKey],
     );
-    if (rows.isEmpty) return null;
+    if (rows.isEmpty) return (session: null, discarded: false);
+    QuizSession session;
     try {
       final decoded = jsonDecode(rows.single['value']! as String);
-      final session = QuizSession.fromJson(decoded as Map<String, dynamic>);
+      session = QuizSession.fromJson(decoded as Map<String, dynamic>);
       if (session.contentVersion != _supportedQuizContentVersion) {
         throw const FormatException('Unsupported quiz content version');
       }
-      return session.status == QuizSessionStatus.active ? session : null;
     } on FormatException {
       await tx.execute(
         'DELETE FROM settings WHERE key = ?',
         [_activeQuizSessionKey],
       );
-      return null;
+      return (session: null, discarded: true);
     } on TypeError {
       await tx.execute(
         'DELETE FROM settings WHERE key = ?',
         [_activeQuizSessionKey],
       );
-      return null;
+      return (session: null, discarded: true);
     }
+    if (session.status != QuizSessionStatus.active) {
+      return (session: null, discarded: false);
+    }
+    // The app owns bundled-content knowledge; persistence owns atomic discard.
+    if (isPromptAvailable != null &&
+        !session.prompts.every(isPromptAvailable)) {
+      await tx.execute(
+        'DELETE FROM settings WHERE key = ?',
+        [_activeQuizSessionKey],
+      );
+      return (session: null, discarded: true);
+    }
+    return (session: session, discarded: false);
   }
 
   Future<void> _writeSession(LocalDatabase tx, QuizSession session) =>

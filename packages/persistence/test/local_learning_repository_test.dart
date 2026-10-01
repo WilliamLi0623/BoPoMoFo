@@ -247,7 +247,13 @@ void main() {
           jsonEncode({...original, ...patch}),
           key
         ]);
+        await expectLater(repository.loadActiveSession(),
+            throwsA(isA<QuizSessionRecoveryRequired>()));
         expect(await repository.loadActiveSession(), isNull);
+        expect(
+            await repository.database
+                .select('SELECT value FROM settings WHERE key = ?', [key]),
+            isEmpty);
         expect(await repository.events.all(), hasLength(1));
         await repository.saveNewSession(quizSession());
       }

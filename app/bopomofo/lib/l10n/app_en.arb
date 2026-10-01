@@ -112,6 +112,7 @@
   "quizAnswerIncorrect": "Answer saved locally. Keep practicing.",
   "quizContinue": "Continue",
   "quizStorageFailure": "Could not save or load your review. Try again.",
+  "quizSessionRecovery": "Your previous review could not be restored. Your learning history is safe.",
   "quizRetry": "Try again",
   "quizNoEligibleQuestions": "No questions are available for review yet.",
   "quizCompletionSummary": "Review complete: {correct} / {total} correct.",
