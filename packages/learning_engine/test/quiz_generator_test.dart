@@ -114,7 +114,7 @@ void main() {
       ],
       confusionTargets: const [
         ConfusionTarget(
-            expected: 'confusion-answer',
+            expected: 'confusion',
             response: 'wrong',
             errorRate: 0.8,
             exposureCount: 5,
