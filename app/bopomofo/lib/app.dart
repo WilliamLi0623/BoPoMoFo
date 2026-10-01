@@ -17,11 +17,16 @@ import 'localization/app_locale_controller.dart';
 
 class BopomofoApp extends StatefulWidget {
   const BopomofoApp(
-      {required this.dependencies, required this.localeController, this.onExportReady, super.key});
+      {required this.dependencies,
+      required this.localeController,
+      this.onExportReady,
+      this.reviewSessionFactory,
+      super.key});
 
   final AppDependencies dependencies;
   final AppLocaleController localeController;
   final ValueChanged<String>? onExportReady;
+  final ReviewSessionFactory? reviewSessionFactory;
 
   @override
   State<BopomofoApp> createState() => _BopomofoAppState();
@@ -83,8 +88,9 @@ class _BopomofoAppState extends State<BopomofoApp> {
               path: _path,
               onReview: () =>
                   Navigator.of(context).pushNamed(AppRoutes.review)),
-          AppRoutes.review: (_) =>
-              ReviewPage(repository: widget.dependencies.repository),
+          AppRoutes.review: (_) => ReviewPage(
+              sessionFactory: widget.reviewSessionFactory ??
+                  widget.dependencies.createReviewSessionRuntime),
           AppRoutes.settings: (_) => SettingsPage(
               localeController: widget.localeController,
               authService: widget.dependencies.authService,
@@ -138,7 +144,10 @@ class _BopomofoAppState extends State<BopomofoApp> {
             repository: widget.dependencies.repository,
             path: _path,
             onReview: () => setState(() => _page = 'review')),
-        'review' => ReviewPage(repository: widget.dependencies.repository),
+        'review' => ReviewPage(
+            sessionFactory: widget.reviewSessionFactory ??
+                widget.dependencies.createReviewSessionRuntime,
+            onReturnToLearning: () => setState(() => _page = 'lesson')),
         'settings' => SettingsPage(
             localeController: widget.localeController,
             authService: widget.dependencies.authService,

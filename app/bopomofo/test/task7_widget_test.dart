@@ -11,20 +11,29 @@ void main() {
 
   testWidgets('onboarding offers the three learning paths', (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
+      BopomofoApp(
+          dependencies: await dependencies(),
+          localeController: await createEnglishLocaleController()),
     );
 
     expect(find.text('Bopomofo'), findsOneWidget);
-    expect(find.text('Learn Bopomofo from what you already know.'), findsOneWidget);
+    expect(find.text('Learn Bopomofo from what you already know.'),
+        findsOneWidget);
     expect(find.text('Start with Pinyin'), findsOneWidget);
     expect(find.text('Start with sounds'), findsOneWidget);
     expect(find.text('I am new to Chinese'), findsOneWidget);
     expect(find.text('Progress is saved locally.'), findsOneWidget);
   });
 
-  testWidgets('guest review saves locally and shows the next prompt', (tester) async {
+  testWidgets('guest review advances to the next persisted prompt',
+      (tester) async {
+    final appDependencies = await dependencies();
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
+      BopomofoApp(
+          dependencies: appDependencies,
+          localeController: await createEnglishLocaleController(),
+          reviewSessionFactory: createTestReviewSessionFactory(
+              store: appDependencies.repository)),
     );
 
     await tester.tap(find.byKey(const ValueKey('path-pinyin')));
@@ -32,17 +41,22 @@ void main() {
     await tester.tap(find.text('Review due items'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('review-prompt-ㄅ')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('review-answer-correct')));
+    expect(find.text('1 / 2'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('quiz-option-ba')));
     await tester.pumpAndSettle();
-
-    expect(find.text('Saved locally'), findsOneWidget);
-    expect(find.text('Next prompt'), findsOneWidget);
+    expect(find.byKey(const ValueKey('quiz-answer-feedback')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('quiz-continue')));
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 2'), findsOneWidget);
+    expect(find.textContaining('ㄆ'), findsOneWidget);
   });
 
-  testWidgets('dashboard separates mastery projections and due status', (tester) async {
+  testWidgets('dashboard separates mastery projections and due status',
+      (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
+      BopomofoApp(
+          dependencies: await dependencies(),
+          localeController: await createEnglishLocaleController()),
     );
 
     await tester.tap(find.byKey(const ValueKey('nav-dashboard')));
@@ -61,9 +75,12 @@ void main() {
     expect(find.text('0%'), findsNWidgets(5));
   });
 
-  testWidgets('settings exposes account, sync, data, and deletion actions', (tester) async {
+  testWidgets('settings exposes account, sync, data, and deletion actions',
+      (tester) async {
     await tester.pumpWidget(
-      BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()),
+      BopomofoApp(
+          dependencies: await dependencies(),
+          localeController: await createEnglishLocaleController()),
     );
 
     await tester.tap(find.byKey(const ValueKey('nav-settings')));
@@ -80,30 +97,36 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Delete account'),
       300,
-      scrollable: find.descendant(
-        of: find.byType(AppScaffold),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byType(AppScaffold),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     expect(find.text('Delete account'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Sync now'),
       -300,
-      scrollable: find.descendant(
-        of: find.byType(AppScaffold),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byType(AppScaffold),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.tap(find.text('Sync now'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('Sync is unavailable offline. Local progress remains safe.'),
       300,
-      scrollable: find.descendant(
-        of: find.byType(AppScaffold),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byType(AppScaffold),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     expect(
       find.text('Sync is unavailable offline. Local progress remains safe.'),
@@ -113,10 +136,12 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Export progress'),
       -300,
-      scrollable: find.descendant(
-        of: find.byType(AppScaffold),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byType(AppScaffold),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.tap(find.text('Export progress'));
     await tester.pumpAndSettle();
@@ -124,8 +149,11 @@ void main() {
   });
 
   testWidgets('named keyboard route is registered', (tester) async {
-    await tester.pumpWidget(BopomofoApp(dependencies: await dependencies(), localeController: await createEnglishLocaleController()));
-    Navigator.of(tester.element(find.byType(AppScaffold))).pushNamed('/keyboard');
+    await tester.pumpWidget(BopomofoApp(
+        dependencies: await dependencies(),
+        localeController: await createEnglishLocaleController()));
+    Navigator.of(tester.element(find.byType(AppScaffold)))
+        .pushNamed('/keyboard');
     await tester.pumpAndSettle();
 
     expect(find.text('Keyboard practice'), findsOneWidget);

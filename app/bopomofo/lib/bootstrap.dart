@@ -2,16 +2,26 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'package:domain/domain.dart';
 import 'package:auth/auth.dart';
 import 'package:persistence/persistence.dart';
 import 'package:learning_engine/learning_engine.dart'
-    show LearningSnapshot, QuizSession, QuizSessionStore;
+    show
+        LearningSnapshot,
+        QuizSession,
+        QuizSessionStore,
+        QuizSessionCoordinator,
+        nextPrompts;
 import 'package:sync/sync.dart' as sync;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'features/review/audio_asset_manifest.dart';
+import 'features/review/audio_prompt_player.dart';
+import 'features/review/review_page.dart';
+import 'features/review/starter_question_bank.dart';
 import 'localization/app_locale_controller.dart';
 import 'localization/locale_preference_store.dart';
 import 'localization/shared_preferences_locale_preference_store.dart';
@@ -217,6 +227,26 @@ class AppDependencies {
   final SyncService syncService;
   final LearningEngine learningEngine;
   final AppLearningRepository repository;
+
+  Future<ReviewSessionRuntime> createReviewSessionRuntime() async {
+    final manifest = await AudioAssetManifest.load(rootBundle);
+    return ReviewSessionRuntime(
+      coordinator: QuizSessionCoordinator(
+        store: repository,
+        queueFactory: () async => nextPrompts(
+          await repository.snapshot(),
+          DateTime.now().toUtc(),
+          10,
+          starterPrompts: buildStarterQuestionBank(manifest),
+        ),
+        newSessionId: () =>
+            DateTime.now().toUtc().microsecondsSinceEpoch.toString(),
+        now: () => DateTime.now().toUtc(),
+        contentVersion: 'starter-v1',
+      ),
+      audioPlayer: OfflineAudioPromptPlayer(manifest: manifest),
+    );
+  }
 
   static Future<AppDependencies> fromConfiguration(
     AppConfiguration configuration, {
