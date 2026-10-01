@@ -112,6 +112,7 @@
   "quizAnswerIncorrect": "答案已儲存到本機。繼續練習。",
   "quizContinue": "繼續",
   "quizStorageFailure": "無法儲存或載入複習進度。請重試。",
+  "quizSessionRecovery": "無法恢復上次的複習。你的學習紀錄已保留。",
   "quizRetry": "重試",
   "quizNoEligibleQuestions": "目前沒有可複習的題目。",
   "quizCompletionSummary": "複習完成：答對 {correct} / {total} 題。",

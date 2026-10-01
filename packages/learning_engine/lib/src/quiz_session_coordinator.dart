@@ -8,6 +8,7 @@ class QuizSessionCoordinator {
     required this.newSessionId,
     required this.now,
     required this.contentVersion,
+    this.isPromptAvailable,
   });
 
   final QuizSessionStore store;
@@ -15,10 +16,20 @@ class QuizSessionCoordinator {
   final String Function() newSessionId;
   final DateTime Function() now;
   final String contentVersion;
+  final bool Function(QuizPrompt)? isPromptAvailable;
   QuizSession? _observedSession;
+  bool recoveredSession = false;
 
   Future<QuizSession?> loadOrStartSession() async {
-    final existing = await store.loadActiveSession();
+    QuizSession? existing;
+    try {
+      existing = await store.loadActiveSession(
+        isPromptAvailable: isPromptAvailable,
+      );
+    } on QuizSessionRecoveryRequired {
+      // Retain the notice if starting the replacement needs a storage retry.
+      recoveredSession = true;
+    }
     if (existing != null) {
       _observedSession = existing;
       return existing;

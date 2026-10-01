@@ -2,6 +2,15 @@ import 'quiz_generator.dart';
 
 enum QuizSessionStatus { active, completed }
 
+/// The incompatible active session was discarded; learning history is intact.
+/// Stores raise this only after the discard transaction has committed.
+class QuizSessionRecoveryRequired implements Exception {
+  const QuizSessionRecoveryRequired();
+
+  @override
+  String toString() => 'QuizSessionRecoveryRequired: Active session discarded';
+}
+
 class QuizSessionConflict implements Exception {
   const QuizSessionConflict(this.message);
   final String message;
@@ -177,7 +186,12 @@ class QuizSession {
 
 /// Implemented by persistence in Task 3. Writes compare both ID and cursor.
 abstract interface class QuizSessionStore {
-  Future<QuizSession?> loadActiveSession();
+  /// Validates every queued snapshot when a content validator is supplied.
+  /// An incompatible queue is discarded before [QuizSessionRecoveryRequired]
+  /// is raised. A missing or completed session returns null without recovery.
+  Future<QuizSession?> loadActiveSession({
+    bool Function(QuizPrompt)? isPromptAvailable,
+  });
   Future<void> saveNewSession(QuizSession session);
   Future<QuizSession> submitAnswer({
     required String sessionId,

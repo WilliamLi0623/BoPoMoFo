@@ -162,6 +162,14 @@ class _ReviewPageState extends State<ReviewPage> {
     return ListView(padding: const EdgeInsets.all(24), children: [
       Text(labels.reviewTitle, style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: 16),
+      if (!_loading && (_runtime?.coordinator.recoveredSession ?? false))
+        Semantics(
+          label: labels.quizSessionRecovery,
+          liveRegion: true,
+          excludeSemantics: true,
+          child: Text(labels.quizSessionRecovery,
+              key: const ValueKey('quiz-session-recovery')),
+        ),
       if (_error) ...[
         Semantics(
           label: labels.quizStorageFailure,

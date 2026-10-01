@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:bopomofo/features/review/review_page.dart';
+import 'package:bopomofo/features/review/audio_asset_manifest.dart';
 import 'package:bopomofo/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:domain/domain.dart';
 import 'package:learning_engine/learning_engine.dart';
@@ -11,6 +14,148 @@ import 'package:persistence/persistence.dart';
 import '../test_support.dart';
 
 void main() {
+  for (final locale in [
+    (
+      value: const Locale('en'),
+      notice:
+          'Your previous review could not be restored. Your learning history is safe.',
+    ),
+    (
+      value: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+      notice: '无法恢复上次的复习。你的学习记录已保留。',
+    ),
+    (
+      value: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+      notice: '無法恢復上次的複習。你的學習紀錄已保留。',
+    ),
+  ]) {
+    for (final corruption in ['malformed', 'codec', 'content']) {
+      testWidgets(
+          '$corruption session recovery is visible in ${locale.value} and retains history',
+          (tester) async {
+        final repository =
+            await LocalLearningRepository.inMemory(userId: 'review-recovery');
+        addTearDown(repository.close);
+        final factory = createTestReviewSessionFactory(store: repository);
+        final runtime = await factory();
+        final original = (await runtime.coordinator.loadOrStartSession())!;
+        await runtime.coordinator.submitAnswer('ba');
+        await runtime.audioPlayer.dispose();
+        final history = await repository.exportLearningData();
+        final rows = await repository.database.select(
+            'SELECT value FROM settings WHERE key = ?', ['quiz.activeSession']);
+        final saved =
+            jsonDecode(rows.single['value'] as String) as Map<String, dynamic>;
+        final invalid = switch (corruption) {
+          'malformed' => '{invalid JSON',
+          'codec' => jsonEncode({...saved, 'codecVersion': 999}),
+          _ => jsonEncode({...saved, 'contentVersion': 'removed-content'}),
+        };
+        await repository.database.execute(
+            'UPDATE settings SET value = ? WHERE key = ?',
+            [invalid, 'quiz.activeSession']);
+
+        await _pumpReview(tester, factory, locale: locale.value);
+
+        expect(find.byKey(const ValueKey('quiz-session-recovery')),
+            findsOneWidget);
+        expect(find.text(locale.notice), findsOneWidget);
+        expect(find.text('1 / 2'), findsOneWidget);
+        expect(
+            find.byKey(const ValueKey('quiz-answer-feedback')), findsNothing);
+        final replacement = (await repository.loadActiveSession())!;
+        expect(replacement.id, isNot(original.id));
+        expect(replacement.currentIndex, 0);
+        expect(replacement.currentAnswer, isNull);
+        expect(await repository.exportLearningData(), history);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+    for (final answered in [false, true]) {
+      testWidgets(
+          'missing queued audio replaces ${answered ? 'answered' : 'unanswered'} session in ${locale.value} and retains history',
+          (tester) async {
+        final repository = await LocalLearningRepository.inMemory();
+        addTearDown(repository.close);
+        final manifest =
+            (await tester.runAsync(() => AudioAssetManifest.load(rootBundle)))!;
+        expect(manifest.assetPathForId('removed-audio'), isNull);
+        await repository.saveNewSession(_sessionWithAudio('removed-audio'));
+        // The unavailable audio is later in the queue, not the current prompt.
+        if (answered) {
+          await repository.submitAnswer(
+            sessionId: 'saved-audio-session',
+            expectedIndex: 0,
+            response: 'ba',
+            correct: true,
+            occurredAt: DateTime.utc(2026, 10, 1),
+            latencyMs: 100,
+          );
+        } else {
+          await repository.recordReview(ReviewAttempt(
+            itemId: 'prior-history',
+            skill: Skill.recognition,
+            correct: true,
+            occurredAt: DateTime.utc(2026, 9, 30),
+          ));
+        }
+        final history = await repository.exportLearningData();
+
+        await _pumpReview(
+            tester,
+            createTestReviewSessionFactory(
+                store: repository, manifest: manifest),
+            locale: locale.value);
+
+        final replacement = (await repository.loadActiveSession())!;
+        expect(replacement.id, isNot('saved-audio-session'));
+        expect(replacement.prompts.map((prompt) => prompt.id),
+            ['first', 'second']);
+        expect(replacement.currentIndex, 0);
+        expect(replacement.currentAnswer, isNull);
+        expect(find.text(locale.notice), findsOneWidget);
+        expect(find.byKey(const ValueKey('quiz-session-recovery')),
+            findsOneWidget);
+        expect(await repository.exportLearningData(), history);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+  }
+
+  for (final answered in [false, true]) {
+    testWidgets('valid audio queue resumes exactly when answered=$answered',
+        (tester) async {
+      final repository = await LocalLearningRepository.inMemory();
+      addTearDown(repository.close);
+      final manifest =
+          (await tester.runAsync(() => AudioAssetManifest.load(rootBundle)))!;
+      expect(manifest.assetPathForId('cns11643-female-ba'), isNotNull);
+      await repository.saveNewSession(_sessionWithAudio('cns11643-female-ba'));
+      if (answered) {
+        await repository.submitAnswer(
+          sessionId: 'saved-audio-session',
+          expectedIndex: 0,
+          response: 'ba',
+          correct: true,
+          occurredAt: DateTime.utc(2026, 10, 1),
+          latencyMs: 100,
+        );
+      }
+      final saved = (await repository.loadActiveSession())!.toJson();
+      final history = await repository.exportLearningData();
+      await _pumpReview(
+          tester,
+          createTestReviewSessionFactory(
+              store: repository, prompts: [], manifest: manifest));
+      expect((await repository.loadActiveSession())!.toJson(), saved);
+      expect(await repository.exportLearningData(), history);
+      expect(find.byKey(const ValueKey('quiz-session-recovery')), findsNothing);
+      expect(find.byKey(const ValueKey('quiz-answer-feedback')),
+          answered ? findsOneWidget : findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
   testWidgets('answer, continue and completion follow the saved queue',
       (tester) async {
     final repository =
@@ -193,13 +338,38 @@ void main() {
   });
 }
 
-Future<void> _pumpReview(
-    WidgetTester tester, ReviewSessionFactory factory) async {
+Future<void> _pumpReview(WidgetTester tester, ReviewSessionFactory factory,
+    {Locale locale = const Locale('en')}) async {
   await tester.pumpWidget(MaterialApp(
-    locale: const Locale('en'),
+    locale: locale,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(body: ReviewPage(sessionFactory: factory)),
   ));
   await tester.pumpAndSettle();
 }
+
+QuizSession _sessionWithAudio(String audioId) => QuizSession(
+      id: 'saved-audio-session',
+      contentVersion: 'starter-v1',
+      prompts: [
+        testReviewPrompts().first,
+        QuizPrompt(
+          id: 'queued-audio',
+          itemId: 'audio-ba',
+          skill: Skill.listening,
+          type: QuizType.listening,
+          promptKey: 'quiz.listening',
+          promptArguments: const {},
+          expectedAnswer: 'ㄅㄚ',
+          options: const ['ㄆㄚ', 'ㄅㄚ'],
+          audioAssetId: audioId,
+        ),
+      ],
+      currentIndex: 0,
+      currentQuestionStartedAt: DateTime.utc(2026, 9, 30),
+      currentAnswer: null,
+      correctCount: 0,
+      answeredCount: 0,
+      status: QuizSessionStatus.active,
+    );

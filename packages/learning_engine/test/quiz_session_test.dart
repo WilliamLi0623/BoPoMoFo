@@ -37,8 +37,18 @@ class MemoryStore implements QuizSessionStore {
   int submitted = 0;
 
   @override
-  Future<QuizSession?> loadActiveSession() async =>
-      value?.status == QuizSessionStatus.active ? value : null;
+  Future<QuizSession?> loadActiveSession({
+    bool Function(QuizPrompt)? isPromptAvailable,
+  }) async {
+    final session = value?.status == QuizSessionStatus.active ? value : null;
+    if (session != null &&
+        isPromptAvailable != null &&
+        !session.prompts.every(isPromptAvailable)) {
+      value = null;
+      throw const QuizSessionRecoveryRequired();
+    }
+    return session;
+  }
 
   @override
   Future<void> saveNewSession(QuizSession session) async {
