@@ -53,9 +53,10 @@ void main() {
       lesson: 'Your first lesson',
       today: 'Today: ㄅ',
       review: 'Review due items',
-      prompt: 'What sound does this symbol represent?',
-      saved: 'Saved locally',
-      next: 'Next prompt',
+      prompt: 'Which sound does ㄅ represent?',
+      saved: 'Correct answer saved locally.',
+      next: 'Continue',
+      secondPrompt: 'Which sound does ㄆ represent?',
       progress: 'Your progress',
       due: 'Due reviews: 0',
       mastered: 'Mastered items: 0',
@@ -67,9 +68,10 @@ void main() {
       lesson: '第一课',
       today: '今天：ㄅ',
       review: '复习待复习项目',
-      prompt: '这个符号代表什么读音？',
-      saved: '已保存在本机',
-      next: '下一题',
+      prompt: '这个符号代表什么读音？ㄅ',
+      saved: '回答正确，已保存到本机。',
+      next: '继续',
+      secondPrompt: '这个符号代表什么读音？ㄆ',
       progress: '你的学习进度',
       due: '待复习：0 项',
       mastered: '已掌握：0 项',
@@ -81,9 +83,10 @@ void main() {
       lesson: '第一課',
       today: '今天：ㄅ',
       review: '複習待複習項目',
-      prompt: '這個符號代表什麼讀音？',
-      saved: '已儲存在本機',
-      next: '下一題',
+      prompt: '這個符號代表什麼讀音？ㄅ',
+      saved: '回答正確，已儲存到本機。',
+      next: '繼續',
+      secondPrompt: '這個符號代表什麼讀音？ㄆ',
       progress: '你的學習進度',
       due: '待複習：0 項',
       mastered: '已掌握：0 項',
@@ -101,6 +104,8 @@ void main() {
       await tester.pumpWidget(BopomofoApp(
         dependencies: dependencies,
         localeController: controller,
+        reviewSessionFactory:
+            createTestReviewSessionFactory(store: dependencies.repository),
       ));
 
       expect(find.text('Bopomofo'), findsOneWidget);
@@ -115,13 +120,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(localized.prompt), findsOneWidget);
-      expect(find.byKey(const ValueKey('review-prompt-ㄅ')), findsOneWidget);
-      expect(find.text('ㄆ'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('review-answer-correct')));
+      expect(find.text('1 / 2'), findsOneWidget);
+      expect(find.byKey(const ValueKey('quiz-option-ba')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('quiz-option-ba')));
       await tester.pumpAndSettle();
 
       expect(find.text(localized.saved), findsOneWidget);
       expect(find.text(localized.next), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('quiz-continue')));
+      await tester.pumpAndSettle();
+      expect(find.text('2 / 2'), findsOneWidget);
+      expect(find.text(localized.secondPrompt), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('nav-dashboard')));
       await tester.pumpAndSettle();
 
