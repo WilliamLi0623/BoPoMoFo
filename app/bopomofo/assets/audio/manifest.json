@@ -8,6 +8,8 @@
       "sourceArchiveEntry": "female.zip/F_ba.mp3",
       "attribution": "Ministry of Digital Affairs / CNS11643 Full Character Library",
       "sourceUrl": "https://www.cns11643.gov.tw/opendata/Voice.zip",
+      "sourceArchiveVersion": "20250113",
+      "sourceReleaseIndex": "https://www.cns11643.gov.tw/opendata/release.txt",
       "license": "Government Open Data License, Version 1.0"
     },
     {
@@ -18,6 +20,8 @@
       "sourceArchiveEntry": "female.zip/F_ma.mp3",
       "attribution": "Ministry of Digital Affairs / CNS11643 Full Character Library",
       "sourceUrl": "https://www.cns11643.gov.tw/opendata/Voice.zip",
+      "sourceArchiveVersion": "20250113",
+      "sourceReleaseIndex": "https://www.cns11643.gov.tw/opendata/release.txt",
       "license": "Government Open Data License, Version 1.0"
     }
   ]

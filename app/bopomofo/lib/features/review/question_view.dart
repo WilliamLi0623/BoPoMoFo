@@ -157,7 +157,11 @@ class _QuestionViewState extends State<QuestionView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Semantics(
-            label: _composition.join(),
+            label: _composition.isEmpty
+                ? labels.quizCompositionEmpty
+                : labels.quizCompositionAnswer(_composition.join()),
+            liveRegion: true,
+            excludeSemantics: true,
             child: Text(
               _composition.isEmpty ? ' ' : _composition.join(),
               key: const ValueKey('quiz-composition-answer'),
@@ -191,7 +195,7 @@ class _QuestionViewState extends State<QuestionView> {
         children: [
           _actionButton(
             key: const ValueKey('quiz-play-audio'),
-            label: labels.quizPlayAudio,
+            label: _isPlaying ? labels.quizPlayingAudio : labels.quizPlayAudio,
             onPressed:
                 _isEnabled && !_isPlaying && !_submitted ? _playAudio : null,
             child: Text(labels.quizPlayAudio),
@@ -199,7 +203,9 @@ class _QuestionViewState extends State<QuestionView> {
           if (_audioError != null) ...[
             const SizedBox(height: 8),
             Semantics(
+              label: labels.quizAudioPlaybackFailed,
               liveRegion: true,
+              excludeSemantics: true,
               child: Text(
                 labels.quizAudioPlaybackFailed,
                 key: const ValueKey('quiz-audio-error'),

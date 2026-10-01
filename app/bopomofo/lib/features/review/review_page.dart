@@ -163,8 +163,13 @@ class _ReviewPageState extends State<ReviewPage> {
       Text(labels.reviewTitle, style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: 16),
       if (_error) ...[
-        Text(labels.quizStorageFailure,
-            key: const ValueKey('quiz-storage-error')),
+        Semantics(
+          label: labels.quizStorageFailure,
+          liveRegion: true,
+          excludeSemantics: true,
+          child: Text(labels.quizStorageFailure,
+              key: const ValueKey('quiz-storage-error')),
+        ),
         TextButton(
             onPressed: _busy || _loading ? null : _retry,
             child: Text(labels.quizRetry)),
@@ -173,10 +178,16 @@ class _ReviewPageState extends State<ReviewPage> {
       else if (session == null)
         Text(labels.quizNoEligibleQuestions, key: const ValueKey('quiz-empty'))
       else if (session.status == QuizSessionStatus.completed) ...[
-        Text(
-            labels.quizCompletionSummary(
-                session.correctCount, session.prompts.length),
-            key: const ValueKey('quiz-completion')),
+        Semantics(
+          label: labels.quizCompletionSummary(
+              session.correctCount, session.prompts.length),
+          liveRegion: true,
+          excludeSemantics: true,
+          child: Text(
+              labels.quizCompletionSummary(
+                  session.correctCount, session.prompts.length),
+              key: const ValueKey('quiz-completion')),
+        ),
         FilledButton(
             key: const ValueKey('quiz-start-again'),
             onPressed: _busy ? null : _load,
@@ -187,10 +198,16 @@ class _ReviewPageState extends State<ReviewPage> {
                 () => Navigator.of(context).maybePop(),
             child: Text(labels.quizReturnToLearning)),
       ] else ...[
-        Text(
-            labels.quizSessionProgress(
-                session.currentIndex + 1, session.prompts.length),
-            key: const ValueKey('quiz-progress')),
+        Semantics(
+          label: labels.quizProgressAnnouncement(
+              session.currentIndex + 1, session.prompts.length),
+          liveRegion: true,
+          excludeSemantics: true,
+          child: Text(
+              labels.quizSessionProgress(
+                  session.currentIndex + 1, session.prompts.length),
+              key: const ValueKey('quiz-progress')),
+        ),
         QuestionView(
           key: ValueKey(
               '${session.id}-${session.currentIndex}-$_questionGeneration'),
@@ -201,11 +218,18 @@ class _ReviewPageState extends State<ReviewPage> {
           initialResponse: session.currentAnswer?.response,
         ),
         if (session.currentAnswer != null) ...[
-          Text(
-              session.currentAnswer!.correct
-                  ? labels.quizAnswerCorrect
-                  : labels.quizAnswerIncorrect,
-              key: const ValueKey('quiz-answer-feedback')),
+          Semantics(
+            label: session.currentAnswer!.correct
+                ? labels.quizAnswerCorrect
+                : labels.quizAnswerIncorrect,
+            liveRegion: true,
+            excludeSemantics: true,
+            child: Text(
+                session.currentAnswer!.correct
+                    ? labels.quizAnswerCorrect
+                    : labels.quizAnswerIncorrect,
+                key: const ValueKey('quiz-answer-feedback')),
+          ),
           FilledButton(
               key: const ValueKey('quiz-continue'),
               onPressed: _busy ? null : _continue,
