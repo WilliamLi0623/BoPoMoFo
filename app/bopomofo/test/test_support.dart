@@ -22,10 +22,11 @@ class _EnglishPreferenceStore implements LocalePreferenceStore {
 Future<AppDependencies> createTestDependencies({
   AppConfiguration configuration = const AppConfiguration(),
   GuestIdStore? guestStore,
+  LocalRepositoryFactory? repositoryFactory,
 }) =>
     AppDependencies.fromConfiguration(
       configuration,
       guestStore: guestStore ?? InMemoryGuestIdStore(),
-      repositoryFactory: (userId) =>
-          LocalLearningRepository.inMemory(userId: userId),
+      repositoryFactory: repositoryFactory ??
+          (userId) => LocalLearningRepository.inMemory(userId: userId),
     );

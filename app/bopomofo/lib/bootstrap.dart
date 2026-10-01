@@ -6,7 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:domain/domain.dart';
 import 'package:auth/auth.dart';
 import 'package:persistence/persistence.dart';
-import 'package:learning_engine/learning_engine.dart' show LearningSnapshot;
+import 'package:learning_engine/learning_engine.dart'
+    show LearningSnapshot, QuizSession, QuizSessionStore;
 import 'package:sync/sync.dart' as sync;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,23 +19,25 @@ import 'localization/shared_preferences_locale_preference_store.dart';
 export 'app.dart' show BopomofoApp;
 
 typedef SyncService = sync.SyncService;
-typedef LocalRepositoryFactory =
-    Future<LocalLearningRepository> Function(String userId);
+typedef LocalRepositoryFactory = Future<LocalLearningRepository> Function(
+    String userId);
 
-class AppLearningRepository implements LearningRepository {
-  AppLearningRepository(this.local)
-      : _dashboard = const DashboardSnapshot();
+class AppLearningRepository implements LearningRepository, QuizSessionStore {
+  AppLearningRepository(this.local) : _dashboard = const DashboardSnapshot();
 
   final LocalLearningRepository local;
   DashboardSnapshot _dashboard;
-  final StreamController<DashboardSnapshot> _updates = StreamController.broadcast();
+  final StreamController<DashboardSnapshot> _updates =
+      StreamController.broadcast();
   LearningSnapshot _snapshot = const LearningSnapshot();
 
   DashboardSnapshot get dashboard => _dashboard;
 
   double masteryFor(Skill skill) {
-    final states = _snapshot.reviewStates.where((state) => state.skill == skill);
-    final stability = states.fold<double>(0, (max, state) => state.stability > max ? state.stability : max);
+    final states =
+        _snapshot.reviewStates.where((state) => state.skill == skill);
+    final stability = states.fold<double>(
+        0, (max, state) => state.stability > max ? state.stability : max);
     return (stability / 21).clamp(0, 1).toDouble();
   }
 
@@ -54,6 +57,41 @@ class AppLearningRepository implements LearningRepository {
   Future<LearningSnapshot> snapshot() => local.snapshot();
 
   @override
+  Future<QuizSession?> loadActiveSession() => local.loadActiveSession();
+
+  @override
+  Future<void> saveNewSession(QuizSession session) =>
+      local.saveNewSession(session);
+
+  @override
+  Future<QuizSession> submitAnswer({
+    required String sessionId,
+    required int expectedIndex,
+    required String response,
+    required bool correct,
+    required DateTime occurredAt,
+    required int latencyMs,
+  }) async {
+    final result = await local.submitAnswer(
+      sessionId: sessionId,
+      expectedIndex: expectedIndex,
+      response: response,
+      correct: correct,
+      occurredAt: occurredAt,
+      latencyMs: latencyMs,
+    );
+    await _refresh();
+    return result;
+  }
+
+  @override
+  Future<QuizSession> continueSession({
+    required String sessionId,
+    required int expectedIndex,
+  }) =>
+      local.continueSession(sessionId: sessionId, expectedIndex: expectedIndex);
+
+  @override
   Stream<DashboardSnapshot> watchDashboard() async* {
     yield _dashboard;
     yield* _updates.stream;
@@ -63,8 +101,11 @@ class AppLearningRepository implements LearningRepository {
     _snapshot = await local.snapshot();
     final now = DateTime.now().toUtc();
     _dashboard = DashboardSnapshot(
-      dueCount: _snapshot.reviewStates.where((state) => !state.dueAt.isAfter(now)).length,
-      masteredCount: _snapshot.reviewStates.where((state) => state.stability >= 21).length,
+      dueCount: _snapshot.reviewStates
+          .where((state) => !state.dueAt.isAfter(now))
+          .length,
+      masteredCount:
+          _snapshot.reviewStates.where((state) => state.stability >= 21).length,
     );
     _updates.add(_dashboard);
   }
@@ -80,11 +121,13 @@ class UnavailableSyncTransport implements sync.SyncTransport {
 
   @override
   Future<sync.UploadResult> upload(List<LearningEvent> events) =>
-      Future<sync.UploadResult>.error(const sync.SyncTransportUnavailable('Cloud sync is not configured.'));
+      Future<sync.UploadResult>.error(
+          const sync.SyncTransportUnavailable('Cloud sync is not configured.'));
 
   @override
   Future<sync.DownloadResult> download({required sync.SyncCursor cursor}) =>
-      Future<sync.DownloadResult>.error(const sync.SyncTransportUnavailable('Cloud sync is not configured.'));
+      Future<sync.DownloadResult>.error(
+          const sync.SyncTransportUnavailable('Cloud sync is not configured.'));
 }
 
 Future<void> bootstrap() async {
@@ -209,8 +252,7 @@ class AppDependencies {
   ) async {
     final directory = await getApplicationSupportDirectory();
     await directory.create(recursive: true);
-    final path =
-        '${directory.path}${Platform.pathSeparator}bopomofo.sqlite';
+    final path = '${directory.path}${Platform.pathSeparator}bopomofo.sqlite';
     final database = LocalDatabase.atPath(path);
     await database.open();
     return LocalLearningRepository(database: database, userId: userId);
@@ -237,9 +279,9 @@ class AppDependencies {
   }
 
   static Future<AuthService> _guestAuthService(GuestIdStore? guestStore) {
-      if (guestStore != null) {
-        return GuestAuthService.create(store: guestStore);
-      }
-      return GuestAuthService.createPersistent();
+    if (guestStore != null) {
+      return GuestAuthService.create(store: guestStore);
+    }
+    return GuestAuthService.createPersistent();
   }
 }
