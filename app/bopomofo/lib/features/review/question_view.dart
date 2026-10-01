@@ -15,12 +15,16 @@ class QuestionView extends StatefulWidget {
     required this.audioPlayer,
     required this.onSubmit,
     required this.disabled,
+    this.initialResponse,
   });
 
   final QuizPrompt prompt;
   final AudioPromptPlayer audioPlayer;
   final ValueChanged<String> onSubmit;
   final bool disabled;
+
+  /// Canonical response already saved for this prompt, if answered.
+  final String? initialResponse;
 
   @override
   State<QuestionView> createState() => _QuestionViewState();
@@ -35,16 +39,32 @@ class _QuestionViewState extends State<QuestionView> {
   int _playbackGeneration = 0;
 
   @override
+  void initState() {
+    super.initState();
+    _restoreResponse();
+  }
+
+  void _restoreResponse() {
+    final response = widget.initialResponse;
+    _recallController.text = response ?? '';
+    _composition
+      ..clear()
+      ..addAll((response ?? '').runes.map(String.fromCharCode));
+    _submitted = response != null;
+  }
+
+  @override
   void didUpdateWidget(covariant QuestionView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.prompt.id != widget.prompt.id ||
-        oldWidget.prompt.audioAssetId != widget.prompt.audioAssetId) {
+    final promptChanged = oldWidget.prompt.id != widget.prompt.id ||
+        oldWidget.prompt.audioAssetId != widget.prompt.audioAssetId;
+    if (promptChanged) {
       _playbackGeneration++;
-      _recallController.clear();
-      _composition.clear();
-      _submitted = false;
       _isPlaying = false;
       _audioError = null;
+    }
+    if (promptChanged || oldWidget.initialResponse != widget.initialResponse) {
+      _restoreResponse();
     }
   }
 
@@ -69,6 +89,11 @@ class _QuestionViewState extends State<QuestionView> {
           ),
           const SizedBox(height: 20),
           _buildControl(labels),
+          if (widget.initialResponse != null) ...[
+            const SizedBox(height: 12),
+            Text('${labels.quizResponseLabel}: ${widget.initialResponse}',
+                key: const ValueKey('quiz-saved-response')),
+          ],
         ],
       ),
     );

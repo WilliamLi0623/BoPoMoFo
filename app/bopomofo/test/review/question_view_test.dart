@@ -131,6 +131,46 @@ void main() {
     expect(submitted, isEmpty);
   });
 
+  testWidgets(
+      'restored composition displays saved symbol order without submitting',
+      (tester) async {
+    final submitted = <String>[];
+    await _pumpQuestion(tester,
+        type: QuizType.composition,
+        initialResponse: 'ㄚㄅ',
+        disabled: true,
+        onSubmit: submitted.add);
+
+    expect(find.text('ㄚㄅ'), findsWidgets);
+    expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('quiz-composition-answer')))
+            .data,
+        'ㄚㄅ');
+    expect(
+        tester
+            .widget<FilledButton>(find.byKey(const ValueKey('quiz-submit')))
+            .onPressed,
+        isNull);
+    expect(submitted, isEmpty);
+  });
+
+  for (final type in [
+    QuizType.recognition,
+    QuizType.listening,
+    QuizType.keyboard
+  ]) {
+    testWidgets('restored ${type.name} shows the saved choice', (tester) async {
+      await _pumpQuestion(tester,
+          type: type,
+          initialResponse: 'saved choice',
+          disabled: true,
+          onSubmit: (_) {});
+      expect(find.byKey(const ValueKey('quiz-saved-response')), findsOneWidget);
+      expect(find.textContaining('saved choice'), findsOneWidget);
+    });
+  }
+
   testWidgets('repeated taps submit an answer only once', (tester) async {
     final submitted = <String>[];
 
@@ -242,11 +282,12 @@ Future<void> _pumpQuestion(
   required QuizType type,
   AudioPromptPlayer? audioPlayer,
   bool disabled = false,
+  String? initialResponse,
   required ValueChanged<String> onSubmit,
 }) async {
   await _pumpPrompt(
       tester, _prompt(type), audioPlayer ?? _FakeAudioPromptPlayer(),
-      onSubmit: onSubmit, disabled: disabled);
+      onSubmit: onSubmit, disabled: disabled, initialResponse: initialResponse);
 }
 
 Future<void> _pumpPrompt(
@@ -255,6 +296,7 @@ Future<void> _pumpPrompt(
   AudioPromptPlayer audioPlayer, {
   ValueChanged<String>? onSubmit,
   bool disabled = false,
+  String? initialResponse,
 }) async {
   await tester.pumpWidget(MaterialApp(
     locale: const Locale('en'),
@@ -266,6 +308,7 @@ Future<void> _pumpPrompt(
         audioPlayer: audioPlayer,
         onSubmit: onSubmit ?? (_) {},
         disabled: disabled,
+        initialResponse: initialResponse,
       ),
     ),
   ));
