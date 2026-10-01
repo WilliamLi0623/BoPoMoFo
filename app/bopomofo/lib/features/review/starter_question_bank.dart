@@ -124,7 +124,9 @@ List<QuizPrompt> buildStarterQuestionBank(AudioAssetManifest manifest) {
     final expected = syllables[entry.pinyin];
     if (expected == null ||
         expected != entry.expectedAnswer ||
-        !syllableAnswers.contains(expected)) continue;
+        !syllableAnswers.contains(expected)) {
+      continue;
+    }
     result.add(QuizPrompt(
       id: 'listening-${entry.id}',
       itemId: 'syllable-${entry.pinyin}',
