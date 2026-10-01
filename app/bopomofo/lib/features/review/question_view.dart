@@ -272,6 +272,7 @@ class _QuestionViewState extends State<QuestionView> {
         label: label,
         button: true,
         enabled: onPressed != null,
+        onTap: onPressed,
         excludeSemantics: true,
         child: FilledButton(
           key: key,

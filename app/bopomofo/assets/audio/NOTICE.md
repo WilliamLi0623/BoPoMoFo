@@ -12,5 +12,11 @@ Ministry of Digital Affairs' CNS11643 Full Character Library.
 
 The official archive index maps `ba` to `ㄅㄚ` and `ma` to `ㄇㄚ`. These two
 MP3 files are bundled unchanged for offline playback.
-The Ministry of Digital Affairs / CNS11643 Full Character Library attribution
-above accompanies these clips under the license's attribution requirement.
+
+Attribution for use of these clips:
+
+Ministry of Digital Affairs (2025), CNS11643 Full Character Library pronunciation
+audio, `Voice.zip` version `20250113`. This open data is made available to the
+public under the Open Government Data License, Version 1.0. It may be used
+when the license's terms and attribution requirements are followed. License:
+https://data.gov.tw/license
