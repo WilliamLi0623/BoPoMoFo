@@ -63,6 +63,7 @@ class _BopomofoAppState extends State<BopomofoApp> {
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'Bopomofo',
+        debugShowCheckedModeBanner: false,
         locale: widget.localeController.locale,
         localizationsDelegates: const [
           AppLocalizations.delegate,
@@ -88,9 +89,15 @@ class _BopomofoAppState extends State<BopomofoApp> {
               path: _path,
               onReview: () =>
                   Navigator.of(context).pushNamed(AppRoutes.review)),
-          AppRoutes.review: (_) => ReviewPage(
-              sessionFactory: widget.reviewSessionFactory ??
-                  widget.dependencies.createReviewSessionRuntime),
+          AppRoutes.review: (context) => Scaffold(
+                appBar: AppBar(
+                    title: Text(AppLocalizations.of(context)!.shellTitle)),
+                body: SafeArea(
+                  child: ReviewPage(
+                      sessionFactory: widget.reviewSessionFactory ??
+                          widget.dependencies.createReviewSessionRuntime),
+                ),
+              ),
           AppRoutes.settings: (_) => SettingsPage(
               localeController: widget.localeController,
               authService: widget.dependencies.authService,

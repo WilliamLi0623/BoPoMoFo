@@ -159,6 +159,10 @@ class _ReviewPageState extends State<ReviewPage> {
   Widget build(BuildContext context) {
     final labels = AppLocalizations.of(context)!;
     final session = _session;
+    final correction = session?.status == QuizSessionStatus.active &&
+            session?.currentAnswer?.correct == false
+        ? labels.quizCorrectAnswer(session!.currentPrompt!.expectedAnswer)
+        : null;
     return ListView(padding: const EdgeInsets.all(24), children: [
       Text(labels.reviewTitle, style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: 16),
@@ -196,10 +200,12 @@ class _ReviewPageState extends State<ReviewPage> {
                   session.correctCount, session.prompts.length),
               key: const ValueKey('quiz-completion')),
         ),
+        const SizedBox(height: 24),
         FilledButton(
             key: const ValueKey('quiz-start-again'),
             onPressed: _busy ? null : _load,
             child: Text(labels.quizStartAgain)),
+        const SizedBox(height: 12),
         OutlinedButton(
             key: const ValueKey('quiz-return-to-learning'),
             onPressed: widget.onReturnToLearning ??
@@ -229,15 +235,68 @@ class _ReviewPageState extends State<ReviewPage> {
           Semantics(
             label: session.currentAnswer!.correct
                 ? labels.quizAnswerCorrect
-                : labels.quizAnswerIncorrect,
+                : '${labels.quizAnswerIncorrect}\n$correction',
             liveRegion: true,
             excludeSemantics: true,
-            child: Text(
-                session.currentAnswer!.correct
-                    ? labels.quizAnswerCorrect
-                    : labels.quizAnswerIncorrect,
-                key: const ValueKey('quiz-answer-feedback')),
+            child: Container(
+              key: const ValueKey('quiz-answer-feedback'),
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: session.currentAnswer!.correct
+                    ? Theme.of(context).colorScheme.secondaryContainer
+                    : Theme.of(context).colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    session.currentAnswer!.correct
+                        ? Icons.check_circle_outline
+                        : Icons.info_outline,
+                    color: session.currentAnswer!.correct
+                        ? Theme.of(context).colorScheme.onSecondaryContainer
+                        : Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          session.currentAnswer!.correct
+                              ? labels.quizAnswerCorrect
+                              : labels.quizAnswerIncorrect,
+                          style: TextStyle(
+                            color: session.currentAnswer!.correct
+                                ? Theme.of(context)
+                                    .colorScheme
+                                    .onSecondaryContainer
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .onErrorContainer,
+                          ),
+                        ),
+                        if (correction != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            correction,
+                            key: const ValueKey('quiz-correct-answer'),
+                            style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onErrorContainer),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
+          const SizedBox(height: 16),
           FilledButton(
               key: const ValueKey('quiz-continue'),
               onPressed: _busy ? null : _continue,
