@@ -21,6 +21,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Ensure repository remains private
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          is_private="$(gh api "repos/$GITHUB_REPOSITORY" --jq .private)"
+          if [[ "$is_private" != 'true' ]]; then
+            echo 'Refusing to publish: the repository is not private.' >&2
+            exit 1
+          fi
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -34,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$ ]]; then
             echo "Tag must be a semantic version such as v0.1.0; got: $GITHUB_REF_NAME" >&2
             exit 1
           fi
