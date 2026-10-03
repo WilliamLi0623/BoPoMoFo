@@ -14,6 +14,73 @@ import 'package:persistence/persistence.dart';
 import '../test_support.dart';
 
 void main() {
+  for (final language in [
+    (
+      locale: const Locale('en'),
+      prefix: 'Correct answer: ',
+      notice: 'Answer saved locally. Keep practicing.'
+    ),
+    (
+      locale: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+      prefix: '正确答案：',
+      notice: '答案已保存到本机。继续练习。'
+    ),
+    (
+      locale: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+      prefix: '正確答案：',
+      notice: '答案已儲存到本機。繼續練習。'
+    ),
+  ]) {
+    for (final type in QuizType.values) {
+      testWidgets(
+          'saved incorrect ${type.name} shows localized correction in ${language.locale}',
+          (tester) async {
+        final repository = await LocalLearningRepository.inMemory();
+        addTearDown(repository.close);
+        final answer = switch (type) {
+          QuizType.recognition => 'ba',
+          QuizType.keyboard => 'ㄅ',
+          _ => 'ㄅㄚ',
+        };
+        final prompt = QuizPrompt(
+          id: 'correction-${type.name}',
+          itemId: 'ba',
+          skill: Skill.recognition,
+          type: type,
+          promptKey: 'quiz.${type.name}',
+          promptArguments: const {'glyph': 'ㄅ', 'pinyin': 'ba'},
+          expectedAnswer: answer,
+          options: type == QuizType.composition
+              ? const ['ㄅ', 'ㄚ']
+              : [answer, 'wrong'],
+          audioAssetId: type == QuizType.listening ? 'fake-ba' : null,
+        );
+        final factory = createTestReviewSessionFactory(
+            store: repository, prompts: [prompt]);
+        final runtime = await factory();
+        await runtime.coordinator.loadOrStartSession();
+        await runtime.coordinator.submitAnswer('wrong');
+        await runtime.audioPlayer.dispose();
+        final saved = (await repository.loadActiveSession())!.toJson();
+        final history = await repository.exportLearningData();
+        await _pumpReview(tester, factory, locale: language.locale);
+        final correction = '${language.prefix}$answer';
+        expect(find.text(correction), findsOneWidget);
+        expect(find.text(language.notice), findsOneWidget);
+        expect(
+            find.byWidgetPredicate((widget) =>
+                widget is Semantics &&
+                widget.properties.liveRegion == true &&
+                (widget.properties.label?.contains(language.notice) ?? false) &&
+                (widget.properties.label?.contains(correction) ?? false)),
+            findsOneWidget);
+        expect((await repository.loadActiveSession())!.toJson(), saved);
+        expect(await repository.exportLearningData(), history);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+  }
+
   for (final locale in [
     (
       value: const Locale('en'),
@@ -168,6 +235,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('quiz-option-ba')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('quiz-answer-feedback')), findsOneWidget);
+    final feedback =
+        tester.getRect(find.byKey(const ValueKey('quiz-answer-feedback')));
+    final next = tester.getRect(find.byKey(const ValueKey('quiz-continue')));
+    expect(next.top - feedback.bottom, greaterThanOrEqualTo(16));
+    expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('quiz-continue')));
     await tester.pumpAndSettle();
     expect(find.text('2 / 2'), findsOneWidget);
@@ -178,6 +250,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('quiz-completion')), findsOneWidget);
     expect(find.textContaining('2 / 2'), findsWidgets);
+    final summary =
+        tester.getRect(find.byKey(const ValueKey('quiz-completion')));
+    final restart =
+        tester.getRect(find.byKey(const ValueKey('quiz-start-again')));
+    final returnButton =
+        tester.getRect(find.byKey(const ValueKey('quiz-return-to-learning')));
+    expect(restart.top - summary.bottom, greaterThanOrEqualTo(24));
+    expect(returnButton.top - restart.bottom, greaterThanOrEqualTo(12));
     expect(await repository.loadActiveSession(), isNull);
     await tester.tap(find.byKey(const ValueKey('quiz-start-again')));
     await tester.pumpAndSettle();
