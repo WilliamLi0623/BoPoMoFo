@@ -186,6 +186,29 @@ class _QuestionViewState extends State<QuestionView> {
             ],
           ),
           const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _actionButton(
+                key: const ValueKey('quiz-composition-undo'),
+                label: labels.quizUndoSymbol,
+                onPressed: _isEnabled && _composition.isNotEmpty
+                    ? () => setState(() => _composition.removeLast())
+                    : null,
+                child: Text(labels.quizUndoSymbol),
+              ),
+              _actionButton(
+                key: const ValueKey('quiz-composition-clear'),
+                label: labels.quizClearResponse,
+                onPressed: _isEnabled && _composition.isNotEmpty
+                    ? () => setState(_composition.clear)
+                    : null,
+                child: Text(labels.quizClearResponse),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           _submitButton(labels, () => _submit(_composition.join())),
         ],
       );
@@ -303,6 +326,7 @@ class _QuestionViewState extends State<QuestionView> {
   void _submit(String response) {
     final canonicalResponse = response.trim();
     if (!_isEnabled || canonicalResponse.isEmpty) return;
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _submitted = true);
     widget.onSubmit(canonicalResponse);
   }

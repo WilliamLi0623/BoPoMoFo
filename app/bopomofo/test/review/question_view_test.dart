@@ -11,6 +11,58 @@ import 'package:learning_engine/learning_engine.dart';
 import 'package:phonology/phonology.dart' as phonology;
 
 void main() {
+  testWidgets('composition can undo and clear an accidental selection',
+      (tester) async {
+    final submitted = <String>[];
+    await _pumpQuestion(tester,
+        type: QuizType.composition, onSubmit: submitted.add);
+    await tester.tap(find.byKey(const ValueKey('quiz-tile-ㄚ')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('quiz-composition-undo')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('quiz-tile-ㄚ')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('quiz-tile-ㄅ')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('quiz-composition-clear')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('quiz-tile-ㄅ')), findsOneWidget);
+    expect(submitted, isEmpty);
+    await tester.tap(find.byKey(const ValueKey('quiz-tile-ㄅ')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('quiz-tile-ㄚ')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('quiz-submit')));
+    await tester.pump();
+    expect(submitted, ['ㄅㄚ']);
+    expect(
+        tester
+            .widget<FilledButton>(
+                find.byKey(const ValueKey('quiz-composition-clear')))
+            .onPressed,
+        isNull);
+  });
+
+  testWidgets('recall submission releases the soft keyboard focus',
+      (tester) async {
+    await _pumpQuestion(tester, type: QuizType.recall, onSubmit: (_) {});
+    await tester.enterText(
+        find.byKey(const ValueKey('quiz-recall-input')), 'ㄅㄚ');
+    expect(
+        tester
+            .widget<EditableText>(find.byType(EditableText))
+            .focusNode
+            .hasFocus,
+        isTrue);
+    await tester.tap(find.byKey(const ValueKey('quiz-submit')));
+    await tester.pump();
+    expect(
+        tester
+            .widget<EditableText>(find.byType(EditableText))
+            .focusNode
+            .hasFocus,
+        isFalse);
+  });
+
   testWidgets('recognition submits the selected canonical option',
       (tester) async {
     final submitted = <String>[];
