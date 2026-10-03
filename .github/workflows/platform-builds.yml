@@ -2,6 +2,7 @@ name: Platform builds
 
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
 
