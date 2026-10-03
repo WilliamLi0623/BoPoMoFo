@@ -1,0 +1,104 @@
+name: Android pre-release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    uses: ./.github/workflows/ci.yml
+
+  build-and-release:
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Ensure repository remains private
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          is_private="$(gh api "repos/$GITHUB_REPOSITORY" --jq .private)"
+          if [[ "$is_private" != 'true' ]]; then
+            echo 'Refusing to publish: the repository is not private.' >&2
+            exit 1
+          fi
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Validate release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$ ]]; then
+            echo "Tag must be a semantic version such as v0.1.0; got: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+      - name: Resolve workspace
+        run: dart pub get
+      - name: Resolve Flutter app and generate localizations
+        working-directory: app/bopomofo
+        run: |
+          flutter pub get
+          flutter gen-l10n
+      - name: Configure Android upload signing
+        shell: bash
+        env:
+          ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE }}
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$ANDROID_UPLOAD_KEYSTORE_BASE64" || -z "$ANDROID_UPLOAD_STORE_PASSWORD" ]]; then
+            echo 'Missing ANDROID_UPLOAD_KEYSTORE or ANDROID_UPLOAD_STORE_PASSWORD repository secret.' >&2
+            exit 1
+          fi
+          keystore="$GITHUB_WORKSPACE/app/bopomofo/android/app/upload-keystore.jks"
+          printf '%s' "$ANDROID_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          chmod 600 "$keystore"
+          echo "ANDROID_UPLOAD_KEYSTORE_PATH=$keystore" >> "$GITHUB_ENV"
+          echo 'ANDROID_UPLOAD_KEY_ALIAS=bopomofo-upload' >> "$GITHUB_ENV"
+      - name: Build and verify signed APK
+        working-directory: app/bopomofo
+        env:
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          flutter build apk --release --no-pub \
+            --build-name="$version" \
+            --build-number="$GITHUB_RUN_NUMBER"
+          apk='build/app/outputs/flutter-apk/app-release.apk'
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$apksigner"
+          "$apksigner" verify --verbose "$apk"
+          sha256sum "$apk" > "$apk.sha256"
+          echo "ANDROID_RELEASE_APK=$GITHUB_WORKSPACE/app/bopomofo/$apk" >> "$GITHUB_ENV"
+          echo "ANDROID_RELEASE_CHECKSUM=$GITHUB_WORKSPACE/app/bopomofo/$apk.sha256" >> "$GITHUB_ENV"
+      - name: Publish private GitHub pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "$ANDROID_RELEASE_APK" \
+            "$ANDROID_RELEASE_CHECKSUM" \
+            --verify-tag \
+            --prerelease \
+            --title "BoPoMoFo $GITHUB_REF_NAME" \
+            --generate-notes
+      - name: Remove signing key from runner
+        if: always()
+        run: rm -f app/bopomofo/android/app/upload-keystore.jks
