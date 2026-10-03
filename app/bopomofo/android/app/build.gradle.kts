@@ -4,10 +4,27 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val uploadKeystorePath = System.getenv("ANDROID_UPLOAD_KEYSTORE_PATH")
+val uploadStorePassword = System.getenv("ANDROID_UPLOAD_STORE_PASSWORD")
+val uploadKeyAlias = System.getenv("ANDROID_UPLOAD_KEY_ALIAS")
+val hasUploadSigning = listOf(uploadKeystorePath, uploadStorePassword, uploadKeyAlias)
+    .all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.example.bopomofo"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+
+    if (hasUploadSigning) {
+        signingConfigs {
+            create("upload") {
+                storeFile = file(requireNotNull(uploadKeystorePath))
+                storePassword = requireNotNull(uploadStorePassword)
+                keyAlias = requireNotNull(uploadKeyAlias)
+                keyPassword = requireNotNull(uploadStorePassword)
+            }
+        }
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -31,9 +48,12 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Keep local release builds convenient; CI supplies the persistent upload key.
+            signingConfig = if (hasUploadSigning) {
+                signingConfigs.getByName("upload")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
