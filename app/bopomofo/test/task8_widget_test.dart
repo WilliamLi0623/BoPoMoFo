@@ -86,7 +86,7 @@ void main() {
     expect(find.text('Listen for the shape and sound of each symbol.'), findsOneWidget);
     await tester.tap(find.text('Review due items').last);
     await tester.pumpAndSettle();
-    expect(find.text('Recognition review'), findsOneWidget);
+    expect(find.text('Review practice'), findsOneWidget);
     await deps.repository.close();
   });
 
