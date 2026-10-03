@@ -80,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
-          flutter build apk --release --no-pub \
+          flutter build apk --release \
             --build-name="$version" \
             --build-number="$GITHUB_RUN_NUMBER"
           apk='build/app/outputs/flutter-apk/app-release.apk'
