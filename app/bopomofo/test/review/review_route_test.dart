@@ -1,7 +1,7 @@
 import 'package:bopomofo/bootstrap.dart';
 import 'package:bopomofo/features/review/review_page.dart';
 import 'package:bopomofo/routes.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../test_support.dart';

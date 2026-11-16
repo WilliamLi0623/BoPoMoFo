@@ -11,6 +11,8 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
+    # gen-l10n output; Flutter 3.50 still generates flutter_localizations imports.
+    - lib/l10n/app_localizations*.dart
     - build/**
     - android/**
     - ios/**

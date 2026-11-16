@@ -7,7 +7,7 @@ Bopomofo is a local-first app for learning Bopomofo from what you already know. 
 ## Requirements
 
 - Dart SDK: `>=3.6.0 <4.0.0`
-- Flutter SDK: `>=3.27.0`
+- Flutter SDK: `>=3.50.0`
 - The app UI supports Simplified Chinese (`zh-Hans`), Traditional Chinese (`zh-Hant`), and English (`en`).
 - Native builds require the matching platform toolchain. GitHub Actions builds Linux, Android, and Windows; macOS and iOS builds run through a manually dispatched workflow, with iOS using `--no-codesign`.
 

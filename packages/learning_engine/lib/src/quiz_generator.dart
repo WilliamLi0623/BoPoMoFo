@@ -146,8 +146,9 @@ List<QuizPrompt> nextPrompts(LearningSnapshot snapshot, DateTime now, int limit,
     if (state.dueAt.isAfter(now)) continue;
     final key = '${state.itemId}|${state.skill.name}';
     final previous = due[key];
-    if (previous == null || state.dueAt.isBefore(previous))
+    if (previous == null || state.dueAt.isBefore(previous)) {
       due[key] = state.dueAt;
+    }
   }
   final confusion = <String, double>{};
   for (final target in snapshot.confusionTargets) {
