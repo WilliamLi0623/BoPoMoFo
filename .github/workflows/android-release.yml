@@ -15,6 +15,7 @@ jobs:
   build-and-release:
     needs: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
     steps:
