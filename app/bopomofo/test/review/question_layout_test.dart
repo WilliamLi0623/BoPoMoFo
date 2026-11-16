@@ -2,7 +2,7 @@ import 'package:bopomofo/features/review/audio_prompt_player.dart';
 import 'package:bopomofo/features/review/question_view.dart';
 import 'package:bopomofo/l10n/app_localizations.dart';
 import 'package:domain/domain.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:learning_engine/learning_engine.dart';
 
@@ -20,7 +20,10 @@ void main() {
           addTearDown(() => tester.binding.setSurfaceSize(null));
           await tester.pumpWidget(MaterialApp(
             locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context)
