@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:bopomofo/app.dart';
 import 'package:bopomofo/localization/app_locale_controller.dart';
 import 'package:bopomofo/localization/locale_preference_store.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../test_support.dart';

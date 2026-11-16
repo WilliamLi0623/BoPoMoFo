@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:bopomofo/features/review/review_page.dart';
 import 'package:bopomofo/features/review/audio_asset_manifest.dart';
 import 'package:bopomofo/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:domain/domain.dart';
@@ -422,7 +422,10 @@ Future<void> _pumpReview(WidgetTester tester, ReviewSessionFactory factory,
     {Locale locale = const Locale('en')}) async {
   await tester.pumpWidget(MaterialApp(
     locale: locale,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: [
+      AppLocalizations.delegate,
+      ...GlobalMaterialLocalizations.delegates,
+    ],
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(body: ReviewPage(sessionFactory: factory)),
   ));

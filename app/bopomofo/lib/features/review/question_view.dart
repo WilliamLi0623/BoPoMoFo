@@ -1,5 +1,5 @@
 import 'package:bopomofo/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:learning_engine/learning_engine.dart';
 import 'package:phonology/phonology.dart' as phonology;
