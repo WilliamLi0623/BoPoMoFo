@@ -74,6 +74,12 @@ jobs:
           chmod 600 "$keystore"
           echo "ANDROID_UPLOAD_KEYSTORE_PATH=$keystore" >> "$GITHUB_ENV"
           echo 'ANDROID_UPLOAD_KEY_ALIAS=bopomofo-upload' >> "$GITHUB_ENV"
+      - name: Write dart defines
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_OAUTH_REDIRECT_URI: ${{ secrets.GOOGLE_OAUTH_REDIRECT_URI }}
+        run: bash tool/write_dart_defines.sh
       - name: Build and verify signed APK
         working-directory: app/bopomofo
         env:
@@ -83,7 +89,8 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           flutter build apk --release \
             --build-name="$version" \
-            --build-number="$GITHUB_RUN_NUMBER"
+            --build-number="$GITHUB_RUN_NUMBER" \
+            ${DART_DEFINES_ARG:-}
           apk='build/app/outputs/flutter-apk/app-release.apk'
           apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -n "$apksigner"
