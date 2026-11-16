@@ -18,6 +18,10 @@ In Supabase Authentication → Providers, enable Google and configure its client
 
 For Apple, enable the Apple provider, configure the Services ID/key/team details, associate the iOS/macOS app identifiers and return URL as required by Apple, and allow the app callback in Supabase. Set `APPLE_REDIRECT_URI`; Apple sign-in is exposed only on iOS and macOS. Keep provider secrets in Supabase/provider configuration, not in the client.
 
+The app's OAuth callback is `io.github.williamli0623.bopomofo://login-callback`. Android registers it with an intent filter in `AndroidManifest.xml`, and iOS and macOS register the scheme under `CFBundleURLTypes` in `Info.plist`. Windows and Linux do not register the scheme yet, so CI builds them without Supabase values and they run in guest mode.
+
+CI reads `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `GOOGLE_OAUTH_REDIRECT_URI` from repository secrets. `tool/write_dart_defines.sh` turns them into a `--dart-define-from-file` argument for the Android, iOS, and macOS builds and for the Android release.
+
 Validate redirect behavior separately for every target platform. This repository does not include production OAuth credentials, provider-console settings, or a deployed Supabase project.
 
 ## Account deletion

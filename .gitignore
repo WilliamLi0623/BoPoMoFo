@@ -23,6 +23,9 @@ build/
 .worktrees/
 outputs/
 
+# Supabase CLI link state (project ref, CLI version cache)
+supabase/.temp/
+
 # Local environment secrets (retain the safe template)
 .env
 .env.*

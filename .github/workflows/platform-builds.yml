@@ -75,7 +75,7 @@ jobs:
             command: flutter build linux --debug
           - os: ubuntu-latest
             target: android
-            command: flutter build apk --debug
+            command: flutter build apk --debug $DART_DEFINES_ARG
           - os: windows-latest
             target: windows
             command: flutter build windows --debug
@@ -105,6 +105,15 @@ jobs:
       - name: Resolve app
         working-directory: app/bopomofo
         run: flutter pub get
+      # Windows and Linux do not register the OAuth callback scheme yet, so
+      # they build without Supabase values and run in guest mode.
+      - name: Write dart defines
+        if: matrix.target == 'android'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_OAUTH_REDIRECT_URI: ${{ secrets.GOOGLE_OAUTH_REDIRECT_URI }}
+        run: bash tool/write_dart_defines.sh
       - name: Build ${{ matrix.target }}
         working-directory: app/bopomofo
         run: ${{ matrix.command }}
@@ -116,9 +125,9 @@ jobs:
       matrix:
         include:
           - target: macos
-            command: flutter build macos --debug
+            command: flutter build macos --debug $DART_DEFINES_ARG
           - target: ios
-            command: flutter build ios --debug --no-codesign
+            command: flutter build ios --debug --no-codesign $DART_DEFINES_ARG
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -132,6 +141,12 @@ jobs:
       - name: Resolve app
         working-directory: app/bopomofo
         run: flutter pub get
+      - name: Write dart defines
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_OAUTH_REDIRECT_URI: ${{ secrets.GOOGLE_OAUTH_REDIRECT_URI }}
+        run: bash tool/write_dart_defines.sh
       - name: Build ${{ matrix.target }}
         working-directory: app/bopomofo
         run: ${{ matrix.command }}
