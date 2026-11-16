@@ -73,8 +73,9 @@ class MemoryStore implements QuizSessionStore {
       required DateTime occurredAt,
       required int latencyMs}) async {
     check(sessionId, expectedIndex);
-    if (value!.currentAnswer != null)
+    if (value!.currentAnswer != null) {
       throw QuizSessionConflict('already answered');
+    }
     submitted++;
     value = value!.copyWith(
       currentAnswer: QuizAnswer(

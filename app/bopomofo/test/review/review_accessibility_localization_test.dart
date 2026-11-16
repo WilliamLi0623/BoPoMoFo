@@ -5,7 +5,7 @@ import 'package:bopomofo/features/review/question_view.dart';
 import 'package:bopomofo/features/review/review_page.dart';
 import 'package:bopomofo/l10n/app_localizations.dart';
 import 'package:domain/domain.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -477,7 +477,10 @@ Future<void> _activateSemantics(WidgetTester tester, String label) async {
 Future<void> _pump(WidgetTester tester, Locale locale, Widget child) async {
   await tester.pumpWidget(MaterialApp(
     locale: locale,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: [
+      AppLocalizations.delegate,
+      ...GlobalMaterialLocalizations.delegates,
+    ],
     supportedLocales: const [
       Locale('en'),
       Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),

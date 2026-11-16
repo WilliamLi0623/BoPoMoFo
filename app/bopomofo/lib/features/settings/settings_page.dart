@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:auth/auth.dart';
 import 'package:sync/sync.dart' show SyncStatus;
 import '../../bootstrap.dart';
