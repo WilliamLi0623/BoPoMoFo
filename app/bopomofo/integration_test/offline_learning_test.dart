@@ -10,7 +10,7 @@ import 'package:bopomofo/l10n/app_localizations.dart';
 import 'package:bopomofo/localization/app_locale_controller.dart';
 import 'package:bopomofo/localization/locale_preference_store.dart';
 import 'package:domain/domain.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
