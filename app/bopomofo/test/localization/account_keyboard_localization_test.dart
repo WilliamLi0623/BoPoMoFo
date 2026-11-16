@@ -5,7 +5,7 @@ import 'package:bopomofo/bootstrap.dart';
 import 'package:bopomofo/localization/app_locale_controller.dart';
 import 'package:bopomofo/localization/locale_preference_store.dart';
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sync/sync.dart' show SyncResult, SyncState, SyncStatus;
 

@@ -7,7 +7,7 @@ Bopomofo 是一款从已知知识出发学习注音的本机优先应用。应�
 ## 环境要求
 
 - Dart SDK：`>=3.6.0 <4.0.0`
-- Flutter SDK：`>=3.27.0`
+- Flutter SDK：`>=3.50.0`
 - 应用界面支持简体中文（`zh-Hans`）、繁體中文（`zh-Hant`）和 English（`en`）。
 - 原生构建需要对应平台的工具链。GitHub Actions 在每次推送和拉取请求时构建 Linux、Android、Windows、macOS 和 iOS 的调试版本，iOS 使用 `--no-codesign`。
 
