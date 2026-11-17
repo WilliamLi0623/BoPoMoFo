@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   analyze-and-test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, bopomofo-linux]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

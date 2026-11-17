@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, bopomofo-linux]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -70,10 +70,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: [self-hosted, bopomofo-linux]
             target: linux
             command: flutter build linux --debug
-          - os: ubuntu-latest
+          - os: [self-hosted, bopomofo-linux]
             target: android
             command: flutter build apk --debug $DART_DEFINES_ARG
           - os: windows-latest
@@ -95,6 +95,12 @@ jobs:
           apt_options=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
           sudo apt-get "${apt_options[@]}" -o APT::Update::Error-Mode=any update
           sudo apt-get "${apt_options[@]}" install -y clang cmake ninja-build pkg-config libgtk-3-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+      - name: Set up Java
+        if: matrix.target == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
       - name: Set up Android SDK
         if: matrix.target == 'android'
         uses: android-actions/setup-android@v3
