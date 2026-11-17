@@ -39,7 +39,8 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          # AGP 9.3 release lint calls List.removeLast(), which needs JDK 21.
+          java-version: '21'
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
