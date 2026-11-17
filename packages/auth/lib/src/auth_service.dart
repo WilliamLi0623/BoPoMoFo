@@ -12,3 +12,13 @@ abstract interface class AuthService {
   Future<void> deleteAccount();
   User? get currentUser;
 }
+
+extension SignedInUser on AuthService {
+  /// The current user when it is a real account session, or null in guest
+  /// mode (the local guest identity is also a [User], marked `is_guest`).
+  User? get signedInUser {
+    final user = currentUser;
+    if (user == null || user.appMetadata['is_guest'] == true) return null;
+    return user;
+  }
+}

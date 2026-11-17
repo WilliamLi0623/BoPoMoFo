@@ -84,6 +84,8 @@
   "accountDeletedWithLocalData": "Account deleted and local data cleared.",
   "accountDeletionUnavailable": "Could not finish account deletion. Check your account and local progress before retrying.",
   "guestModeProgress": "Guest mode · local progress",
+  "signedInAccount": "Signed in · {email}",
+  "@signedInAccount": {"placeholders":{"email":{"type":"String"}}},
   "syncNow": "Sync now",
   "syncPending": "Sync pending. Local progress remains safe.",
   "syncComplete": "Progress synced.",

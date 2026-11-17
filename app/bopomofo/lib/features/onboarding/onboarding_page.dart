@@ -3,7 +3,7 @@ import 'package:auth/auth.dart';
 import '../../bootstrap.dart';
 import '../../l10n/app_localizations.dart';
 
-enum _SignInStatus { complete, cancelled, unavailable }
+enum _SignInStatus { started, complete, cancelled, unavailable }
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({required this.learningEngine, required this.authService, required this.syncService, required this.repository, required this.onPathSelected, super.key});
@@ -25,8 +25,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _signInWithGoogle() async {
     setState(() { _authBusy = true; _authStatus = null; });
     try {
-      await widget.authService.signInWithGoogle();
-      if (mounted) setState(() => _authStatus = _SignInStatus.complete);
+      final user = await widget.authService.signInWithGoogle();
+      if (mounted) {
+        setState(() => _authStatus =
+            user == null ? _SignInStatus.started : _SignInStatus.complete);
+      }
     } catch (error) {
       if (mounted) {
         setState(() {
@@ -44,6 +47,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Widget build(BuildContext context) {
     final labels = AppLocalizations.of(context)!;
     final authMessage = switch (_authStatus) {
+      _SignInStatus.started => labels.googleSignInStarted,
       _SignInStatus.complete => labels.googleSignInComplete,
       _SignInStatus.cancelled => labels.googleSignInCancelled,
       _SignInStatus.unavailable => labels.googleSignInUnavailable,
@@ -56,7 +60,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
           const SizedBox(height: 12),
           Text(labels.onboardingIntro),
           const SizedBox(height: 8),
-          Text(labels.guestModeLocal),
+          Text(
+            key: const ValueKey('account-mode'),
+            switch (widget.authService.signedInUser) {
+              final user? => labels.signedInAccount(user.email ?? user.id),
+              null => labels.guestModeLocal,
+            },
+          ),
           const SizedBox(height: 20),
           OutlinedButton(key: const ValueKey('start-learning'), onPressed: () => widget.onPathSelected('pinyin'), child: Text(labels.startLearning)),
           const SizedBox(height: 12),
