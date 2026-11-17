@@ -14,7 +14,7 @@ jobs:
 
   build-and-release:
     needs: quality
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, bopomofo-linux]
     timeout-minutes: 30
     permissions:
       contents: write
