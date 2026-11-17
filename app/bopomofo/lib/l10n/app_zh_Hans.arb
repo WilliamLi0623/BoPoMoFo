@@ -84,6 +84,8 @@
   "accountDeletedWithLocalData": "账户和本机学习数据已删除。",
   "accountDeletionUnavailable": "无法完成账户删除。请检查账户和本机学习进度后重试。",
   "guestModeProgress": "访客模式 · 本机学习进度",
+  "signedInAccount": "已登录 · {email}",
+  "@signedInAccount": {"placeholders":{"email":{"type":"String"}}},
   "syncNow": "立即同步",
   "syncPending": "等待同步。本机学习进度仍然安全。",
   "syncComplete": "学习进度已同步。",

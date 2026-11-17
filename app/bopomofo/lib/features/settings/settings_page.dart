@@ -179,7 +179,10 @@ class _SettingsPageState extends State<SettingsPage> {
             child: ListTile(
               key: const ValueKey('settings-account'),
               title: Text(labels.account),
-              subtitle: Text(labels.guestModeProgress),
+              subtitle: Text(switch (widget.authService.signedInUser) {
+                final user? => labels.signedInAccount(user.email ?? user.id),
+                null => labels.guestModeProgress,
+              }),
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => AccountPage(
                   authService: widget.authService,

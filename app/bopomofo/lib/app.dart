@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:design_system/design_system.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
@@ -36,10 +38,13 @@ class _BopomofoAppState extends State<BopomofoApp> {
   String _page = 'onboarding';
   String _path = 'pinyin';
 
+  StreamSubscription<Object?>? _authSubscription;
+
   @override
   void initState() {
     super.initState();
     widget.localeController.addListener(_onLocaleChanged);
+    _listenToAuth();
   }
 
   @override
@@ -49,15 +54,30 @@ class _BopomofoAppState extends State<BopomofoApp> {
       oldWidget.localeController.removeListener(_onLocaleChanged);
       widget.localeController.addListener(_onLocaleChanged);
     }
+    if (oldWidget.dependencies.authService !=
+        widget.dependencies.authService) {
+      _listenToAuth();
+    }
   }
 
   @override
   void dispose() {
     widget.localeController.removeListener(_onLocaleChanged);
+    _authSubscription?.cancel();
     super.dispose();
   }
 
   void _onLocaleChanged() => setState(() {});
+
+  // The OAuth callback completes after signInWithGoogle() returns, so pages
+  // that show the account state rebuild when the session arrives.
+  void _listenToAuth() {
+    _authSubscription?.cancel();
+    _authSubscription = widget.dependencies.authService.authStateChanges
+        .listen((_) {
+      if (mounted) setState(() {});
+    }, onError: (Object _) {});
+  }
 
   @override
   Widget build(BuildContext context) => MaterialApp(
