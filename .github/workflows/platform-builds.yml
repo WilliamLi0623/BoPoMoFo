@@ -11,6 +11,9 @@ permissions:
 
 jobs:
   quality:
+    # Never run pull requests from forks on the self-hosted homelab runner.
+    # build and apple-build need this job, so they are skipped as well.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, bopomofo-linux]
     timeout-minutes: 20
     steps:
@@ -66,6 +69,7 @@ jobs:
 
   build:
     needs: quality
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
       matrix:
