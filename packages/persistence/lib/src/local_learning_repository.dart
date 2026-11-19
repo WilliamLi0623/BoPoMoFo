@@ -257,6 +257,7 @@ class LocalLearningRepository implements QuizSessionStore {
     required Iterable<EventId> acknowledgedIds,
     required DateTime uploadedAt,
     String? cursor,
+    String cursorKey = 'events',
   }) async {
     await database.transaction((tx) async {
       final txEvents = EventsDao(tx);
@@ -269,7 +270,7 @@ class LocalLearningRepository implements QuizSessionStore {
         await tx.execute(
           '''INSERT INTO sync_cursor (key, value) VALUES (?, ?)
              ON CONFLICT(key) DO UPDATE SET value = excluded.value''',
-          ['events', cursor],
+          [cursorKey, cursor],
         );
       }
     });

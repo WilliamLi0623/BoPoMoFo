@@ -119,7 +119,7 @@ void main() {
     await tester.tap(find.text('Sync now'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.text('Sync is unavailable offline. Local progress remains safe.'),
+      find.text('Sign in to sync. Progress is saved on this device.'),
       300,
       scrollable: find
           .descendant(
@@ -129,7 +129,7 @@ void main() {
           .first,
     );
     expect(
-      find.text('Sync is unavailable offline. Local progress remains safe.'),
+      find.text('Sign in to sync. Progress is saved on this device.'),
       findsOneWidget,
     );
 

@@ -5,6 +5,7 @@ import 'package:domain/domain.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:persistence/persistence.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sync/sync.dart' show SyncStatus;
 
 import 'package:bopomofo/bootstrap.dart';
 
@@ -23,6 +24,8 @@ void main() {
       dependencies.authService.currentUser!.appMetadata['is_guest'],
       isTrue,
     );
+    expect((await dependencies.syncService.syncNow()).status, SyncStatus.localOnly);
+    await dependencies.repository.close();
   });
 
   test('invalid Supabase URL keeps the app in guest mode', () async {

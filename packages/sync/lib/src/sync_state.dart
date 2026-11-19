@@ -1,6 +1,6 @@
 import 'package:domain/domain.dart';
 
-enum SyncStatus { localOnly, pending, synced, offline, error }
+enum SyncStatus { localOnly, pending, synced, offline, accountMismatch, error }
 
 class SyncCursor {
   final String value;
@@ -59,6 +59,10 @@ class SyncTransportUnavailable implements Exception {
 
   @override
   String toString() => 'SyncTransportUnavailable: $message';
+}
+
+class SyncAccountMismatch implements Exception {
+  const SyncAccountMismatch();
 }
 
 class DownloadResult {

@@ -224,10 +224,11 @@ void main() {
   }
 
   for (final statusCase in [
-    (status: SyncStatus.localOnly, expected: 'Progress is saved locally.'),
+    (status: SyncStatus.localOnly, expected: 'Sign in to sync. Progress is saved on this device.'),
     (status: SyncStatus.pending, expected: 'Sync pending. Local progress remains safe.'),
     (status: SyncStatus.synced, expected: 'Progress synced.'),
     (status: SyncStatus.offline, expected: 'Sync is unavailable offline. Local progress remains safe.'),
+    (status: SyncStatus.accountMismatch, expected: 'This device’s progress is linked to another account. Sign in to that account to sync.'),
     (status: SyncStatus.error, expected: 'Sync failed. Local progress remains safe; try again later.'),
   ]) {
     testWidgets('sync ${statusCase.status.name} ignores arbitrary service message', (tester) async {
