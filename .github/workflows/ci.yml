@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    branches: ['**', '!test/android-manual-sync']
   pull_request:
   workflow_call:
 
