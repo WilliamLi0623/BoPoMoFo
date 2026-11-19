@@ -17,6 +17,7 @@ import 'package:learning_engine/learning_engine.dart'
         nextPrompts;
 import 'package:sync/sync.dart' as sync;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show OAuthProvider;
 
 import 'app.dart';
 import 'features/review/audio_asset_manifest.dart';
@@ -184,12 +185,14 @@ class AppConfiguration {
     this.supabaseUrl,
     this.supabasePublishableKey,
     this.googleRedirectUri,
+    this.googleWebClientId,
     this.appleRedirectUri,
   });
 
   final String? supabaseUrl;
   final String? supabasePublishableKey;
   final String? googleRedirectUri;
+  final String? googleWebClientId;
   final String? appleRedirectUri;
 
   factory AppConfiguration.fromEnvironment() => const AppConfiguration(
@@ -198,6 +201,7 @@ class AppConfiguration {
           'SUPABASE_PUBLISHABLE_KEY',
         ),
         googleRedirectUri: String.fromEnvironment('GOOGLE_OAUTH_REDIRECT_URI'),
+        googleWebClientId: String.fromEnvironment('GOOGLE_OAUTH_CLIENT_ID'),
         appleRedirectUri: String.fromEnvironment('APPLE_REDIRECT_URI'),
       );
 
@@ -304,9 +308,23 @@ class AppDependencies {
         configuration.authEnvironment,
       );
       final gateway = await SupabaseAuthGateway.initialize(authConfiguration);
+      final nativeGoogle = Platform.isAndroid
+          ? NativeGoogleSignIn(
+              serverClientId: configuration.googleWebClientId ?? '',
+              exchangeIdToken: ({required idToken, required nonce}) async {
+                final response = await gateway.client.auth.signInWithIdToken(
+                  provider: OAuthProvider.google,
+                  idToken: idToken,
+                  nonce: nonce,
+                );
+                return response.session?.user;
+              },
+            )
+          : null;
       return SupabaseAuthService(
         configuration: authConfiguration,
         gateway: gateway,
+        nativeGoogleSignIn: nativeGoogle?.signIn,
       );
     } on AuthConfigurationError {
       return _guestAuthService(guestStore);

@@ -30,6 +30,7 @@ dependencies:
   sync:
     path: ../../packages/sync
   shared_preferences: ^2.3.3
+  supabase_flutter: ^2.9.0
 
 dev_dependencies:
   integration_test:

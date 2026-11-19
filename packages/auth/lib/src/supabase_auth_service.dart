@@ -54,15 +54,19 @@ class SupabaseAuthGateway implements AuthGateway {
 }
 
 class SupabaseAuthService implements AuthService {
-  SupabaseAuthService(
-      {required AuthConfiguration configuration, required AuthGateway gateway})
-      : _configuration = configuration,
-        _gateway = gateway {
+  SupabaseAuthService({
+    required AuthConfiguration configuration,
+    required AuthGateway gateway,
+    Future<User?> Function()? nativeGoogleSignIn,
+  }) : _configuration = configuration,
+        _gateway = gateway,
+        _nativeGoogleSignIn = nativeGoogleSignIn {
     _configuration.validate();
   }
 
   final AuthConfiguration _configuration;
   final AuthGateway _gateway;
+  final Future<User?> Function()? _nativeGoogleSignIn;
 
   bool get isAppleAvailable => Platform.isIOS || Platform.isMacOS;
 
@@ -97,6 +101,9 @@ class SupabaseAuthService implements AuthService {
 
   Future<User?> _signIn(OAuthProvider provider, String redirectTo) async {
     try {
+      if (provider == OAuthProvider.google && _nativeGoogleSignIn != null) {
+        return await _nativeGoogleSignIn();
+      }
       final launched = await _gateway.signInWithOAuth(provider, redirectTo);
       if (!launched) {
         throw const AuthFailure(

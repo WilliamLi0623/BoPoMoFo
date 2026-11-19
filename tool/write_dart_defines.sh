@@ -9,7 +9,7 @@ set -euo pipefail
 file="${RUNNER_TEMP:-/tmp}/dart_defines.env"
 : > "$file"
 count=0
-for name in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY GOOGLE_OAUTH_REDIRECT_URI APPLE_REDIRECT_URI; do
+for name in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY GOOGLE_OAUTH_REDIRECT_URI GOOGLE_OAUTH_CLIENT_ID APPLE_REDIRECT_URI; do
   value="${!name:-}"
   if [[ -n "$value" ]]; then
     printf '%s=%s\n' "$name" "$value" >> "$file"
