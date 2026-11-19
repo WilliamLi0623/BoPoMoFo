@@ -104,6 +104,8 @@ class _QuestionViewState extends State<QuestionView> {
     return switch (widget.prompt.promptKey) {
       'quiz.recognition' =>
         labels.quizPromptRecognition(arguments['glyph'] ?? ''),
+      'quiz.beginnerInitial' =>
+        labels.quizPromptBeginnerInitial(arguments['syllable'] ?? ''),
       'quiz.recall' => labels.quizPromptRecall(arguments['pinyin'] ?? ''),
       'quiz.composition' =>
         labels.quizPromptComposition(arguments['pinyin'] ?? ''),

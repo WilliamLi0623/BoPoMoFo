@@ -83,7 +83,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Your first lesson'), findsOneWidget);
-    expect(find.text('Listen for the shape and sound of each symbol.'), findsOneWidget);
+    expect(find.text('Listen to the official Taiwanese pronunciation recordings, then try a listening question.'), findsOneWidget);
     await tester.tap(find.text('Review due items').last);
     await tester.pumpAndSettle();
     expect(find.text('Review practice'), findsOneWidget);

@@ -49,6 +49,14 @@ class AudioAssetManifest {
     return null;
   }
 
+  static Future<AudioAssetManifest> loadBundled(AssetBundle bundle) async {
+    final manifest = await load(bundle);
+    final assets = (await AssetManifest.loadFromAssetBundle(bundle)).listAssets().toSet();
+    return AudioAssetManifest(List.unmodifiable(
+      manifest.entries.where((entry) => assets.contains(entry.assetPath)),
+    ));
+  }
+
   static Future<AudioAssetManifest> load(AssetBundle bundle) async {
     final contents = await bundle.loadString('assets/audio/manifest.json');
     final json = jsonDecode(contents) as Map<String, dynamic>;

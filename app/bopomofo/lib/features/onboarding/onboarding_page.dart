@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:auth/auth.dart';
 import '../../bootstrap.dart';
 import '../../l10n/app_localizations.dart';
+import '../lesson/learning_path.dart';
 
 enum _SignInStatus { started, complete, cancelled, unavailable }
 
@@ -12,7 +13,7 @@ class OnboardingPage extends StatefulWidget {
   final AuthService authService;
   final SyncService syncService;
   final AppLearningRepository repository;
-  final ValueChanged<String> onPathSelected;
+  final ValueChanged<LearningPath> onPathSelected;
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -68,11 +69,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
             },
           ),
           const SizedBox(height: 20),
-          OutlinedButton(key: const ValueKey('start-learning'), onPressed: () => widget.onPathSelected('pinyin'), child: Text(labels.startLearning)),
+          OutlinedButton(key: const ValueKey('start-learning'), onPressed: () => widget.onPathSelected(LearningPath.pinyin), child: Text(labels.startLearning)),
           const SizedBox(height: 12),
-          _PathButton(key: const ValueKey('path-pinyin'), label: labels.pathPinyin, onPressed: () => widget.onPathSelected('pinyin')),
-          _PathButton(key: const ValueKey('path-sounds'), label: labels.pathSounds, onPressed: () => widget.onPathSelected('sounds')),
-          _PathButton(key: const ValueKey('path-beginner'), label: labels.pathBeginner, onPressed: () => widget.onPathSelected('beginner')),
+          _PathButton(key: const ValueKey('path-pinyin'), label: labels.pathPinyin, onPressed: () => widget.onPathSelected(LearningPath.pinyin)),
+          _PathButton(key: const ValueKey('path-sounds'), label: labels.pathSounds, onPressed: () => widget.onPathSelected(LearningPath.sounds)),
+          _PathButton(key: const ValueKey('path-beginner'), label: labels.pathBeginner, onPressed: () => widget.onPathSelected(LearningPath.beginner)),
           OutlinedButton(onPressed: _authBusy ? null : _signInWithGoogle, child: Text(_authBusy ? labels.signingIn : labels.googleSignIn)),
           if (authMessage != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(authMessage, key: const ValueKey('auth-status'))),
           const SizedBox(height: 20),

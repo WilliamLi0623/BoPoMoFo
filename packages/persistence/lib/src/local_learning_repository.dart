@@ -42,12 +42,19 @@ class LocalLearningRepository implements QuizSessionStore {
     );
   }
 
+  /// Binds an independent practice queue to the same learning-event store.
+  QuizSessionStore quizSessions(String scope) =>
+      _ScopedQuizSessions(this, '$_activeQuizSessionKey.$scope');
+
   @override
   Future<QuizSession?> loadActiveSession({
     bool Function(QuizPrompt)? isPromptAvailable,
+    String sessionKey = _activeQuizSessionKey,
   }) async {
     final result = await database.transaction(
-      (tx) => _readActiveSession(tx, isPromptAvailable: isPromptAvailable),
+      (tx) => _readActiveSession(
+        tx, sessionKey, isPromptAvailable: isPromptAvailable,
+      ),
     );
     // Throw outside the transaction so discarding the session is not rolled back.
     if (result.discarded) throw const QuizSessionRecoveryRequired();
@@ -55,7 +62,10 @@ class LocalLearningRepository implements QuizSessionStore {
   }
 
   @override
-  Future<void> saveNewSession(QuizSession session) async {
+  Future<void> saveNewSession(
+    QuizSession session, {
+    String sessionKey = _activeQuizSessionKey,
+  }) async {
     if (session.status != QuizSessionStatus.active ||
         session.contentVersion != _supportedQuizContentVersion) {
       throw const FormatException('Unsupported or inactive quiz session');
@@ -67,11 +77,11 @@ class LocalLearningRepository implements QuizSessionStore {
       throw const FormatException('A new quiz session must be unanswered');
     }
     await database.transaction((tx) async {
-      if ((await _readActiveSession(tx)).session != null) {
+      if ((await _readActiveSession(tx, sessionKey)).session != null) {
         throw const QuizSessionConflict(
             'An active quiz session already exists');
       }
-      await _writeSession(tx, session);
+      await _writeSession(tx, sessionKey, session);
     });
   }
 
@@ -83,9 +93,10 @@ class LocalLearningRepository implements QuizSessionStore {
     required bool correct,
     required DateTime occurredAt,
     required int latencyMs,
+    String sessionKey = _activeQuizSessionKey,
   }) async {
     final updated = await database.transaction((tx) async {
-      final session = (await _readActiveSession(tx)).session;
+      final session = (await _readActiveSession(tx, sessionKey)).session;
       if (session == null ||
           session.id != sessionId ||
           session.currentIndex != expectedIndex ||
@@ -122,7 +133,7 @@ class LocalLearningRepository implements QuizSessionStore {
         correctCount: session.correctCount + (correct ? 1 : 0),
         answeredCount: session.answeredCount + 1,
       );
-      await _writeSession(tx, answered);
+      await _writeSession(tx, sessionKey, answered);
       return answered;
     });
     await _publishDashboard();
@@ -133,9 +144,10 @@ class LocalLearningRepository implements QuizSessionStore {
   Future<QuizSession> continueSession({
     required String sessionId,
     required int expectedIndex,
+    String sessionKey = _activeQuizSessionKey,
   }) =>
       database.transaction((tx) async {
-        final session = (await _readActiveSession(tx)).session;
+        final session = (await _readActiveSession(tx, sessionKey)).session;
         if (session == null ||
             session.id != sessionId ||
             session.currentIndex != expectedIndex ||
@@ -150,17 +162,17 @@ class LocalLearningRepository implements QuizSessionStore {
           status:
               isLast ? QuizSessionStatus.completed : QuizSessionStatus.active,
         );
-        await _writeSession(tx, next);
+        await _writeSession(tx, sessionKey, next);
         return next;
       });
 
   Future<({QuizSession? session, bool discarded})> _readActiveSession(
-    LocalDatabase tx, {
+    LocalDatabase tx, String sessionKey, {
     bool Function(QuizPrompt)? isPromptAvailable,
   }) async {
     final rows = await tx.select(
       'SELECT value FROM settings WHERE key = ?',
-      [_activeQuizSessionKey],
+      [sessionKey],
     );
     if (rows.isEmpty) return (session: null, discarded: false);
     QuizSession session;
@@ -173,13 +185,13 @@ class LocalLearningRepository implements QuizSessionStore {
     } on FormatException {
       await tx.execute(
         'DELETE FROM settings WHERE key = ?',
-        [_activeQuizSessionKey],
+        [sessionKey],
       );
       return (session: null, discarded: true);
     } on TypeError {
       await tx.execute(
         'DELETE FROM settings WHERE key = ?',
-        [_activeQuizSessionKey],
+        [sessionKey],
       );
       return (session: null, discarded: true);
     }
@@ -191,18 +203,20 @@ class LocalLearningRepository implements QuizSessionStore {
         !session.prompts.every(isPromptAvailable)) {
       await tx.execute(
         'DELETE FROM settings WHERE key = ?',
-        [_activeQuizSessionKey],
+        [sessionKey],
       );
       return (session: null, discarded: true);
     }
     return (session: session, discarded: false);
   }
 
-  Future<void> _writeSession(LocalDatabase tx, QuizSession session) =>
+  Future<void> _writeSession(
+    LocalDatabase tx, String sessionKey, QuizSession session,
+  ) =>
       tx.execute(
         '''INSERT INTO settings (key, value) VALUES (?, ?)
            ON CONFLICT(key) DO UPDATE SET value = excluded.value''',
-        [_activeQuizSessionKey, jsonEncode(session.toJson())],
+        [sessionKey, jsonEncode(session.toJson())],
       );
 
   Future<LearningEvent> appendEvent(LearningEvent event) async {
@@ -396,4 +410,54 @@ class LocalLearningRepository implements QuizSessionStore {
   Future<void> _publishDashboard() async {
     if (!_dashboard.isClosed) _dashboard.add(await _dashboardSnapshot());
   }
+}
+
+class _ScopedQuizSessions implements QuizSessionStore {
+  const _ScopedQuizSessions(this._repository, this._key);
+
+  final LocalLearningRepository _repository;
+  final String _key;
+
+  @override
+  Future<QuizSession?> loadActiveSession({
+    bool Function(QuizPrompt)? isPromptAvailable,
+  }) =>
+      _repository.loadActiveSession(
+        isPromptAvailable: isPromptAvailable,
+        sessionKey: _key,
+      );
+
+  @override
+  Future<void> saveNewSession(QuizSession session) =>
+      _repository.saveNewSession(session, sessionKey: _key);
+
+  @override
+  Future<QuizSession> submitAnswer({
+    required String sessionId,
+    required int expectedIndex,
+    required String response,
+    required bool correct,
+    required DateTime occurredAt,
+    required int latencyMs,
+  }) =>
+      _repository.submitAnswer(
+        sessionId: sessionId,
+        expectedIndex: expectedIndex,
+        response: response,
+        correct: correct,
+        occurredAt: occurredAt,
+        latencyMs: latencyMs,
+        sessionKey: _key,
+      );
+
+  @override
+  Future<QuizSession> continueSession({
+    required String sessionId,
+    required int expectedIndex,
+  }) =>
+      _repository.continueSession(
+        sessionId: sessionId,
+        expectedIndex: expectedIndex,
+        sessionKey: _key,
+      );
 }

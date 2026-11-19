@@ -51,7 +51,6 @@ void main() {
       intro: 'Learn Bopomofo from what you already know.',
       path: 'Start with Pinyin',
       lesson: 'Your first lesson',
-      today: 'Today: ㄅ',
       review: 'Review due items',
       prompt: 'Which sound does ㄅ represent?',
       saved: 'Correct answer saved locally.',
@@ -66,7 +65,6 @@ void main() {
       intro: '从你熟悉的知识开始学习注音。',
       path: '从拼音开始',
       lesson: '第一课',
-      today: '今天：ㄅ',
       review: '复习待复习项目',
       prompt: '这个符号代表什么读音？ㄅ',
       saved: '回答正确，已保存到本机。',
@@ -81,7 +79,6 @@ void main() {
       intro: '從你熟悉的知識開始學習注音。',
       path: '從拼音開始',
       lesson: '第一課',
-      today: '今天：ㄅ',
       review: '複習待複習項目',
       prompt: '這個符號代表什麼讀音？ㄅ',
       saved: '回答正確，已儲存到本機。',
@@ -115,7 +112,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(localized.lesson), findsOneWidget);
-      expect(find.text(localized.today), findsOneWidget);
+      expect(find.text('ba → ㄅㄚ'), findsOneWidget);
       await tester.tap(find.text(localized.review));
       await tester.pumpAndSettle();
 
