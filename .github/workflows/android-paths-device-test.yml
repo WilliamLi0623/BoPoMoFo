@@ -1,0 +1,92 @@
+name: Android signed paths test
+
+on:
+  push:
+    branches: [test/android-learning-paths]
+
+permissions:
+  contents: read
+
+jobs:
+  signed-apk:
+    if: github.repository == 'WilliamLi0623/BoPoMoFo' && github.event.repository.private
+    runs-on: [self-hosted, bopomofo-linux]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Resolve Flutter app and generate localizations
+        working-directory: app/bopomofo
+        run: |
+          flutter pub get
+          flutter gen-l10n
+      - name: Write app build settings
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_OAUTH_REDIRECT_URI: ${{ secrets.GOOGLE_OAUTH_REDIRECT_URI }}
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          for key in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY GOOGLE_OAUTH_REDIRECT_URI GOOGLE_OAUTH_CLIENT_ID; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "Missing app build setting: $key" >&2
+              exit 1
+            fi
+          done
+          bash tool/write_dart_defines.sh
+      - name: Build APK with the existing Android upload key
+        working-directory: app/bopomofo
+        env:
+          ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE }}
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          import os
+          from pathlib import Path
+          import subprocess
+          import tempfile
+
+          with tempfile.TemporaryDirectory(dir=os.environ["RUNNER_TEMP"]) as directory:
+              key = Path(directory) / "upload.jks"
+              key.touch(mode=0o600)
+              key.write_bytes(base64.b64decode(os.environ["ANDROID_UPLOAD_KEYSTORE_BASE64"], validate=True))
+              child_env = os.environ.copy()
+              child_env.pop("ANDROID_UPLOAD_KEYSTORE_BASE64")
+              child_env["ANDROID_UPLOAD_KEYSTORE_PATH"] = str(key)
+              child_env["ANDROID_UPLOAD_KEY_ALIAS"] = "bopomofo-upload"
+              subprocess.run([
+                  "flutter", "build", "apk", "--release",
+                  "--build-name=0.2.2-test.paths1", "--build-number=9",
+                  os.environ["DART_DEFINES_ARG"],
+              ], check=True, env=child_env)
+          PY
+      - name: Verify signature and write checksum
+        working-directory: app/bopomofo/build/app/outputs/flutter-apk
+        run: |
+          set -euo pipefail
+          signer="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          report="$("$signer" verify --print-certs app-release.apk)"
+          test "$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$report")" = c113180ecab468dcba7c265c1ae0ab070d40745e526a973c9e2f0fa195eb7b99
+          sha256sum app-release.apk > app-release.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bopomofo-paths1-signed-apk
+          path: |
+            app/bopomofo/build/app/outputs/flutter-apk/app-release.apk
+            app/bopomofo/build/app/outputs/flutter-apk/app-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 2
