@@ -9,6 +9,23 @@ void main() {
     expect(toZhuyin('zhi'), 'ㄓ');
     expect(toZhuyin('shi'), 'ㄕ');
     expect(toZhuyin('ju'), 'ㄐㄩ');
+    // Course syllables added so guided lessons reach every zhuyin symbol.
+    expect(toZhuyin('ta'), 'ㄊㄚ');
+    expect(toZhuyin('te'), 'ㄊㄜ');
+    expect(toZhuyin('he'), 'ㄏㄜ');
+    expect(toZhuyin('ji'), 'ㄐㄧ');
+    expect(toZhuyin('qi'), 'ㄑㄧ');
+    expect(toZhuyin('xi'), 'ㄒㄧ');
+    expect(toZhuyin('bai'), 'ㄅㄞ');
+    expect(toZhuyin('bei'), 'ㄅㄟ');
+    expect(toZhuyin('bao'), 'ㄅㄠ');
+    expect(toZhuyin('dou'), 'ㄉㄡ');
+    expect(toZhuyin('ban'), 'ㄅㄢ');
+    expect(toZhuyin('ben'), 'ㄅㄣ');
+    expect(toZhuyin('bang'), 'ㄅㄤ');
+    expect(toZhuyin('deng'), 'ㄉㄥ');
+    expect(toZhuyin('er'), 'ㄦ');
+    expect(toZhuyin('ye'), 'ㄧㄝ');
   });
 
   test('exposes all 37 symbols with stable keyboard keys', () {

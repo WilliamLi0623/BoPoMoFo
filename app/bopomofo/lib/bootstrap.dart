@@ -242,7 +242,9 @@ class AppDependencies {
         queueFactory: () async => nextPrompts(
           await repository.snapshot(),
           DateTime.now().toUtc(),
-          10,
+          // Review sessions sample the bank; a lesson session teaches every
+          // prompt of that lesson in one pass.
+          lesson == null ? 10 : prompts.length,
           starterPrompts: prompts,
         ),
         newSessionId: () =>

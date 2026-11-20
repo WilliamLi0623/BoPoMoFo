@@ -13,6 +13,13 @@ const _mapping = <String, String>{
   'ga': 'ㄍㄚ', 'ge': 'ㄍㄜ', 'gu': 'ㄍㄨ', 'ka': 'ㄎㄚ',
   'la': 'ㄌㄚ', 'le': 'ㄌㄜ', 'li': 'ㄌㄧ', 'lu': 'ㄌㄨ',
   'na': 'ㄋㄚ', 'ne': 'ㄋㄜ', 'ni': 'ㄋㄧ', 'nu': 'ㄋㄨ',
+  // Course syllables added so guided lessons reach every zhuyin symbol
+  // (see LearningLesson examples in app/bopomofo).
+  'ta': 'ㄊㄚ', 'te': 'ㄊㄜ', 'he': 'ㄏㄜ',
+  'ji': 'ㄐㄧ', 'qi': 'ㄑㄧ', 'xi': 'ㄒㄧ',
+  'bai': 'ㄅㄞ', 'bei': 'ㄅㄟ', 'bao': 'ㄅㄠ', 'dou': 'ㄉㄡ',
+  'ban': 'ㄅㄢ', 'ben': 'ㄅㄣ', 'bang': 'ㄅㄤ', 'deng': 'ㄉㄥ',
+  'er': 'ㄦ', 'ye': 'ㄧㄝ',
 };
 
 String toZhuyin(String pinyin) {

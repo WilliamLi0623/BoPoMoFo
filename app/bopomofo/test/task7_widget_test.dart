@@ -38,6 +38,16 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('path-pinyin')));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Review due items'),
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(AppScaffold),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     await tester.tap(find.text('Review due items'));
     await tester.pumpAndSettle();
 
