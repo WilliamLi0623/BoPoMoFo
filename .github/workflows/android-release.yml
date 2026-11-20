@@ -86,16 +86,16 @@ jobs:
         working-directory: app/bopomofo
         env:
           ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+        # Run 6 published v0.2.1 as versionCode 6, but signed test builds
+        # already reached versionCode 9 (0.2.2-test.paths1). The offset
+        # keeps every new release at least one above the highest test
+        # build while staying monotonic with run numbers.
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
           flutter build apk --release \
             --build-name="$version" \
-            # Run 6 published v0.2.1 as versionCode 6, but signed test builds
-          # already reached versionCode 9 (0.2.2-test.paths1). The offset
-          # keeps every new release at least one above the highest test
-          # build while staying monotonic with run numbers.
-          --build-number="$((GITHUB_RUN_NUMBER + 3))" \
+            --build-number="$((GITHUB_RUN_NUMBER + 3))" \
             ${DART_DEFINES_ARG:-}
           apk='build/app/outputs/flutter-apk/app-release.apk'
           apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
