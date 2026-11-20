@@ -13,6 +13,70 @@ import 'package:auth/auth.dart'
 import 'package:test/test.dart';
 
 void main() {
+  test(
+    'native sign-in returns the exchanged user without launching OAuth',
+    () async {
+      final user = User(
+        id: 'native-user',
+        appMetadata: {},
+        userMetadata: {},
+        aud: 'authenticated',
+        createdAt: '2026-11-19T00:00:00Z',
+      );
+      final gateway = FakeAuthGateway(
+        oauthSignIn: (_, __) async {
+          fail('Native sign-in must not launch browser OAuth');
+        },
+      );
+      final service = SupabaseAuthService(
+        configuration: _configuration(),
+        gateway: gateway,
+        nativeGoogleSignIn: () async => user,
+      );
+      expect(await service.signInWithGoogle(), same(user));
+      expect(gateway.lastProvider, isNull);
+    },
+  );
+
+  test('native cancellation retains its typed failure', () async {
+    final service = SupabaseAuthService(
+      configuration: _configuration(),
+      gateway: FakeAuthGateway(),
+      nativeGoogleSignIn: () async => throw const AuthFailure(
+        kind: AuthFailureKind.cancelled,
+        message: 'cancelled',
+      ),
+    );
+    await expectLater(
+      service.signInWithGoogle(),
+      throwsA(
+        isA<AuthFailure>().having(
+          (e) => e.kind,
+          'kind',
+          AuthFailureKind.cancelled,
+        ),
+      ),
+    );
+  });
+
+  test('native token exchange rejection maps to a provider failure', () async {
+    final service = SupabaseAuthService(
+      configuration: _configuration(),
+      gateway: FakeAuthGateway(),
+      nativeGoogleSignIn: () async => throw AuthException('Token rejected'),
+    );
+    await expectLater(
+      service.signInWithGoogle(),
+      throwsA(
+        isA<AuthFailure>().having(
+          (e) => e.kind,
+          'kind',
+          AuthFailureKind.provider,
+        ),
+      ),
+    );
+  });
+
   test('missing environment configuration fails with a typed error', () {
     expect(
       () => AuthConfiguration.fromEnvironment(const {}),
