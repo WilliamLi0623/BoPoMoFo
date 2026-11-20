@@ -65,7 +65,10 @@ void main() {
           expect((await firstRepo.loadActiveSession())!.currentAnswer!.response,
               prompts.first.expectedAnswer);
           expect((await firstRepo.events.all()), hasLength(1));
-          expect((await sync.syncNow()).status, SyncStatus.offline);
+          // No signed-in account: the sync service stays local-only even
+          // with no network. Truly offline, signed-in behavior is covered
+          // by packages/sync/test/sync_service_test.dart.
+          expect((await sync.syncNow()).status, SyncStatus.localOnly);
 
           // Recreate app dependencies and the SQLite connection while saved
           // feedback is pending Continue.
