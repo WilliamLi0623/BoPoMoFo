@@ -1,0 +1,84 @@
+name: Desktop packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version, e.g. 0.2.2'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    # The self-hosted runner has the apt/network access needed for the GTK
+    # and GStreamer build dependencies.
+    runs-on: [self-hosted, bopomofo-linux]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install Linux build dependencies
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          apt_options=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+          sudo apt-get "${apt_options[@]}" -o APT::Update::Error-Mode=any update
+          sudo apt-get "${apt_options[@]}" install -y clang cmake ninja-build pkg-config libgtk-3-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+      - name: Resolve workspace
+        run: dart pub get
+      - name: Resolve app
+        working-directory: app/bopomofo
+        run: flutter pub get
+      # Windows and Linux do not register the OAuth callback scheme yet, so
+      # desktop builds run in guest mode with progress kept locally.
+      - name: Build Linux release
+        working-directory: app/bopomofo
+        run: flutter build linux --release
+      - name: Package Linux bundles
+        run: bash tool/package_linux.sh "${{ inputs.version }}" desktop-out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bopomofo-linux-${{ inputs.version }}
+          path: |
+            desktop-out/*.tar.gz
+            desktop-out/*.deb
+            desktop-out/*.sha256
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve workspace
+        run: dart pub get
+      - name: Resolve app
+        working-directory: app/bopomofo
+        run: flutter pub get
+      - name: Build Windows release
+        working-directory: app/bopomofo
+        shell: pwsh
+        run: flutter build windows --release
+      - name: Package Windows zip
+        shell: pwsh
+        run: |
+          $stage = 'desktop-out'
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          $zip = "$stage/BoPoMoFo-${{ inputs.version }}-windows-x64.zip"
+          Compress-Archive -Path 'app/bopomofo/build/windows/x64/runner/Release/*' -DestinationPath $zip
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash
+          "$hash  $(Split-Path -Leaf $zip)" | Out-File "$zip.sha256" -Encoding ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bopomofo-windows-${{ inputs.version }}
+          path: desktop-out/*
+          if-no-files-found: error
