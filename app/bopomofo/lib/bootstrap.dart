@@ -227,16 +227,18 @@ class AppDependencies {
 
   Future<ReviewSessionRuntime> createReviewSessionRuntime({
     LearningPath? path,
+    int lessonNumber = 1,
   }) async {
     final manifest = await AudioAssetManifest.loadBundled(rootBundle);
-    final prompts = path == null
+    final lesson = path == null ? null : lessonsForPath(path)[lessonNumber - 1];
+    final prompts = lesson == null
         ? buildStarterQuestionBank(manifest)
-        : starterPromptsForPath(path, manifest);
+        : starterPromptsForLesson(lesson, manifest);
     return ReviewSessionRuntime(
       coordinator: QuizSessionCoordinator(
-        store: path == null
+        store: lesson == null
             ? repository
-            : repository.local.quizSessions(path.name),
+            : repository.local.quizSessions(lesson.scope),
         queueFactory: () async => nextPrompts(
           await repository.snapshot(),
           DateTime.now().toUtc(),

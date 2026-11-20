@@ -38,7 +38,6 @@ class _BopomofoAppState extends State<BopomofoApp> {
   int _navIndex = 0;
   String _page = 'onboarding';
   LearningPath _path = LearningPath.pinyin;
-  LearningPath? _reviewPath;
 
   StreamSubscription<Object?>? _authSubscription;
 
@@ -102,20 +101,15 @@ class _BopomofoAppState extends State<BopomofoApp> {
           AppRoutes.dashboard: (_) => DashboardPage(
               learningEngine: widget.dependencies.learningEngine,
               repository: widget.dependencies.repository),
-          AppRoutes.lesson: (context) => LessonPage(
-              path: _path,
-              onPractice: () => Navigator.of(context)
-                  .pushNamed(AppRoutes.review, arguments: _path),
-              onReview: () =>
-                  Navigator.of(context).pushNamed(AppRoutes.review)),
+          AppRoutes.lesson: (context) => _coursePage(
+                context,
+                onReview: () => Navigator.of(context).pushNamed(AppRoutes.review),
+              ),
           AppRoutes.review: (context) => Scaffold(
                 appBar: AppBar(
                     title: Text(AppLocalizations.of(context)!.shellTitle)),
                 body: SafeArea(
-                  child: ReviewPage(
-                      sessionFactory: _sessionFactory(
-                        ModalRoute.of(context)?.settings.arguments,
-                      )),
+                  child: ReviewPage(sessionFactory: _sessionFactory()),
                 ),
               ),
           AppRoutes.settings: (_) => SettingsPage(
@@ -156,22 +150,20 @@ class _BopomofoAppState extends State<BopomofoApp> {
               settingsLabel: labels.settings,
               selectedIndex: _navIndex,
               onDestinationSelected: _navigate,
-              body: _body(),
+              body: _body(context),
             );
           },
         ),
       );
 
-  Widget _body() => switch (_page) {
+  Widget _body(BuildContext context) => switch (_page) {
         'dashboard' => DashboardPage(
             learningEngine: widget.dependencies.learningEngine,
             repository: widget.dependencies.repository),
-        'lesson' => LessonPage(
-            path: _path,
-            onPractice: () => _startShellReview(_path),
-            onReview: () => _startShellReview(null)),
+        'lesson' => _coursePage(
+            context, onReview: () => setState(() => _page = 'review')),
         'review' => ReviewPage(
-            sessionFactory: _sessionFactory(_reviewPath),
+            sessionFactory: _sessionFactory(),
             onReturnToLearning: () => setState(() => _page = 'lesson')),
         'settings' => SettingsPage(
             localeController: widget.localeController,
@@ -205,16 +197,37 @@ class _BopomofoAppState extends State<BopomofoApp> {
         _navIndex = 0;
       });
 
-  ReviewSessionFactory _sessionFactory(Object? path) =>
+  ReviewSessionFactory _sessionFactory([LearningLesson? lesson]) =>
       widget.reviewSessionFactory ??
       () => widget.dependencies.createReviewSessionRuntime(
-            path: path is LearningPath ? path : null,
+            path: lesson?.path,
+            lessonNumber: lesson?.number ?? 1,
           );
 
-  void _startShellReview(LearningPath? path) => setState(() {
-        _reviewPath = path;
-        _page = 'review';
-      });
+  LessonPage _coursePage(BuildContext context, {required VoidCallback onReview}) {
+    final path = _path;
+    return LessonPage(
+      key: ValueKey(path),
+      path: path,
+      loadCompleted: () => widget.dependencies.repository.local.completedQuizScopes(
+        lessonsForPath(path).map((lesson) => lesson.scope),
+      ),
+      onPractice: (lesson) => Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (context) => Scaffold(
+            appBar: AppBar(title: Text(AppLocalizations.of(context)!.courseLesson(lesson.number))),
+            body: SafeArea(
+              child: ReviewPage(
+                sessionFactory: _sessionFactory(lesson),
+                onNextLesson: lesson.hasNext ? () => Navigator.of(context).pop(true) : null,
+              ),
+            ),
+          ),
+        ),
+      ),
+      onReview: onReview,
+    );
+  }
 
   void _selectNamedPath(BuildContext context, LearningPath path) {
     setState(() {

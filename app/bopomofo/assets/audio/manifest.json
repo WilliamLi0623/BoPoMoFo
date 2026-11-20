@@ -23,6 +23,54 @@
       "sourceArchiveVersion": "20250113",
       "sourceReleaseIndex": "https://www.cns11643.gov.tw/opendata/release.txt",
       "license": "Government Open Data License, Version 1.0"
+    },
+    {
+      "id": "cns11643-female-bi",
+      "pinyin": "bi",
+      "expectedAnswer": "ㄅㄧ",
+      "assetPath": "assets/audio/F_bi.mp3",
+      "sourceArchiveEntry": "female.zip/F_bi.mp3",
+      "attribution": "Ministry of Digital Affairs / CNS11643 Full Character Library",
+      "sourceUrl": "https://www.cns11643.gov.tw/opendata/Voice.zip",
+      "sourceArchiveVersion": "20250113",
+      "sourceReleaseIndex": "https://www.cns11643.gov.tw/opendata/release.txt",
+      "license": "Government Open Data License, Version 1.0"
+    },
+    {
+      "id": "cns11643-female-bu",
+      "pinyin": "bu",
+      "expectedAnswer": "ㄅㄨ",
+      "assetPath": "assets/audio/F_bu.mp3",
+      "sourceArchiveEntry": "female.zip/F_bu.mp3",
+      "attribution": "Ministry of Digital Affairs / CNS11643 Full Character Library",
+      "sourceUrl": "https://www.cns11643.gov.tw/opendata/Voice.zip",
+      "sourceArchiveVersion": "20250113",
+      "sourceReleaseIndex": "https://www.cns11643.gov.tw/opendata/release.txt",
+      "license": "Government Open Data License, Version 1.0"
+    },
+    {
+      "id": "cns11643-female-da",
+      "pinyin": "da",
+      "expectedAnswer": "ㄉㄚ",
+      "assetPath": "assets/audio/F_da.mp3",
+      "sourceArchiveEntry": "female.zip/F_da.mp3",
+      "attribution": "Ministry of Digital Affairs / CNS11643 Full Character Library",
+      "sourceUrl": "https://www.cns11643.gov.tw/opendata/Voice.zip",
+      "sourceArchiveVersion": "20250113",
+      "sourceReleaseIndex": "https://www.cns11643.gov.tw/opendata/release.txt",
+      "license": "Government Open Data License, Version 1.0"
+    },
+    {
+      "id": "cns11643-female-na",
+      "pinyin": "na",
+      "expectedAnswer": "ㄋㄚ",
+      "assetPath": "assets/audio/F_na.mp3",
+      "sourceArchiveEntry": "female.zip/F_na.mp3",
+      "attribution": "Ministry of Digital Affairs / CNS11643 Full Character Library",
+      "sourceUrl": "https://www.cns11643.gov.tw/opendata/Voice.zip",
+      "sourceArchiveVersion": "20250113",
+      "sourceReleaseIndex": "https://www.cns11643.gov.tw/opendata/release.txt",
+      "license": "Government Open Data License, Version 1.0"
     }
   ]
 }
