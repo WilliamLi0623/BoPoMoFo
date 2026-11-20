@@ -9,16 +9,15 @@ void main() {
     final manifest = await AudioAssetManifest.load(rootBundle);
     final entries = manifest.entries;
 
-    expect(entries, hasLength(greaterThanOrEqualTo(2)));
+    const verifiedMappings = {
+      'ba': 'ㄅㄚ', 'ma': 'ㄇㄚ', 'bi': 'ㄅㄧ',
+      'bu': 'ㄅㄨ', 'da': 'ㄉㄚ', 'na': 'ㄋㄚ',
+    };
+    expect(entries, hasLength(verifiedMappings.length));
     expect(entries.map((entry) => entry.id).toSet(), hasLength(entries.length));
-    const verifiedMappings = {'ba': 'ㄅㄚ', 'ma': 'ㄇㄚ'};
     expect(
       {for (final entry in entries) entry.pinyin: entry.expectedAnswer},
-      containsPair('ba', 'ㄅㄚ'),
-    );
-    expect(
-      {for (final entry in entries) entry.pinyin: entry.expectedAnswer},
-      containsPair('ma', 'ㄇㄚ'),
+      verifiedMappings,
     );
 
     for (final entry in entries) {

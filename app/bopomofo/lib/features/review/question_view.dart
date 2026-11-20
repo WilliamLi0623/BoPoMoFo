@@ -106,6 +106,8 @@ class _QuestionViewState extends State<QuestionView> {
         labels.quizPromptRecognition(arguments['glyph'] ?? ''),
       'quiz.beginnerInitial' =>
         labels.quizPromptBeginnerInitial(arguments['syllable'] ?? ''),
+      'quiz.beginnerFinal' =>
+        labels.quizPromptBeginnerFinal(arguments['syllable'] ?? ''),
       'quiz.recall' => labels.quizPromptRecall(arguments['pinyin'] ?? ''),
       'quiz.composition' =>
         labels.quizPromptComposition(arguments['pinyin'] ?? ''),

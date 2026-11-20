@@ -18,9 +18,10 @@ class ReviewSessionRuntime {
 
 class ReviewPage extends StatefulWidget {
   const ReviewPage(
-      {required this.sessionFactory, this.onReturnToLearning, super.key});
+      {required this.sessionFactory, this.onReturnToLearning, this.onNextLesson, super.key});
   final ReviewSessionFactory sessionFactory;
   final VoidCallback? onReturnToLearning;
+  final VoidCallback? onNextLesson;
 
   @override
   State<ReviewPage> createState() => _ReviewPageState();
@@ -201,10 +202,24 @@ class _ReviewPageState extends State<ReviewPage> {
               key: const ValueKey('quiz-completion')),
         ),
         const SizedBox(height: 24),
-        FilledButton(
+        if (widget.onNextLesson != null) ...[
+          FilledButton(
+            key: const ValueKey('quiz-next-lesson'),
+            onPressed: _busy ? null : widget.onNextLesson,
+            child: Text(labels.courseNextLesson),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
             key: const ValueKey('quiz-start-again'),
             onPressed: _busy ? null : _load,
-            child: Text(labels.quizStartAgain)),
+            child: Text(labels.quizStartAgain),
+          ),
+        ] else
+          FilledButton(
+            key: const ValueKey('quiz-start-again'),
+            onPressed: _busy ? null : _load,
+            child: Text(labels.quizStartAgain),
+          ),
         const SizedBox(height: 12),
         OutlinedButton(
             key: const ValueKey('quiz-return-to-learning'),

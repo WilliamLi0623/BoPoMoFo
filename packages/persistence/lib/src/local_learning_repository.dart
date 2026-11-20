@@ -46,6 +46,47 @@ class LocalLearningRepository implements QuizSessionStore {
   QuizSessionStore quizSessions(String scope) =>
       _ScopedQuizSessions(this, '$_activeQuizSessionKey.$scope');
 
+  static String _completionKey(String sessionKey) => '$sessionKey.completed';
+
+  Future<Set<String>> completedQuizScopes(Iterable<String> scopes) async {
+    final sessionKeys = {
+      for (final scope in scopes) scope: '$_activeQuizSessionKey.$scope',
+    };
+    if (sessionKeys.isEmpty) return {};
+    final keys = [
+      for (final key in sessionKeys.values) ...[key, _completionKey(key)],
+    ];
+    final placeholders = List.filled(keys.length, '?').join(', ');
+    final rows = await database.select(
+      'SELECT key, value FROM settings WHERE key IN ($placeholders)',
+      keys,
+    );
+    final values = {for (final row in rows) row['key']: row['value']};
+    return {
+      for (final entry in sessionKeys.entries)
+        if (values[_completionKey(entry.value)] == '1' ||
+            _isCompletedSession(values[entry.value]))
+          entry.key,
+    };
+  }
+
+  static bool _isCompletedSession(Object? value) {
+    if (value is! String) return false;
+    try {
+      final json = jsonDecode(value);
+      return json is Map<String, dynamic> &&
+          QuizSession.fromJson(json).status == QuizSessionStatus.completed;
+    } on FormatException {
+      return false;
+    }
+  }
+
+  Future<void> _markQuizCompleted(LocalDatabase tx, String sessionKey) =>
+      tx.execute(
+        'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)',
+        [_completionKey(sessionKey), '1'],
+      );
+
   @override
   Future<QuizSession?> loadActiveSession({
     bool Function(QuizPrompt)? isPromptAvailable,
@@ -77,9 +118,16 @@ class LocalLearningRepository implements QuizSessionStore {
       throw const FormatException('A new quiz session must be unanswered');
     }
     await database.transaction((tx) async {
-      if ((await _readActiveSession(tx, sessionKey)).session != null) {
+      final previous = (await _readActiveSession(
+        tx, sessionKey, includeCompleted: true,
+      )).session;
+      if (previous?.status == QuizSessionStatus.active) {
         throw const QuizSessionConflict(
             'An active quiz session already exists');
+      }
+      if (sessionKey != _activeQuizSessionKey &&
+          previous?.status == QuizSessionStatus.completed) {
+        await _markQuizCompleted(tx, sessionKey);
       }
       await _writeSession(tx, sessionKey, session);
     });
@@ -163,12 +211,16 @@ class LocalLearningRepository implements QuizSessionStore {
               isLast ? QuizSessionStatus.completed : QuizSessionStatus.active,
         );
         await _writeSession(tx, sessionKey, next);
+        if (isLast && sessionKey != _activeQuizSessionKey) {
+          await _markQuizCompleted(tx, sessionKey);
+        }
         return next;
       });
 
   Future<({QuizSession? session, bool discarded})> _readActiveSession(
     LocalDatabase tx, String sessionKey, {
     bool Function(QuizPrompt)? isPromptAvailable,
+    bool includeCompleted = false,
   }) async {
     final rows = await tx.select(
       'SELECT value FROM settings WHERE key = ?',
@@ -195,7 +247,7 @@ class LocalLearningRepository implements QuizSessionStore {
       );
       return (session: null, discarded: true);
     }
-    if (session.status != QuizSessionStatus.active) {
+    if (!includeCompleted && session.status != QuizSessionStatus.active) {
       return (session: null, discarded: false);
     }
     // The app owns bundled-content knowledge; persistence owns atomic discard.

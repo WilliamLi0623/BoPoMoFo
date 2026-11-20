@@ -74,7 +74,7 @@ void main() {
       home: Scaffold(
           body: LessonPage(
         path: LearningPath.sounds,
-        onPractice: () {},
+        onPractice: (_) async => null,
         onReview: () {},
         audioOutput: output,
       )),
