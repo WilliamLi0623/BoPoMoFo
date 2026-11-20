@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'bootstrap.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/lesson/lesson_page.dart';
+import 'features/lesson/learning_path.dart';
 import 'features/onboarding/onboarding_page.dart';
 import 'features/review/review_page.dart';
 import 'features/settings/settings_page.dart';
@@ -36,7 +37,8 @@ class BopomofoApp extends StatefulWidget {
 class _BopomofoAppState extends State<BopomofoApp> {
   int _navIndex = 0;
   String _page = 'onboarding';
-  String _path = 'pinyin';
+  LearningPath _path = LearningPath.pinyin;
+  LearningPath? _reviewPath;
 
   StreamSubscription<Object?>? _authSubscription;
 
@@ -101,9 +103,9 @@ class _BopomofoAppState extends State<BopomofoApp> {
               learningEngine: widget.dependencies.learningEngine,
               repository: widget.dependencies.repository),
           AppRoutes.lesson: (context) => LessonPage(
-              learningEngine: widget.dependencies.learningEngine,
-              repository: widget.dependencies.repository,
               path: _path,
+              onPractice: () => Navigator.of(context)
+                  .pushNamed(AppRoutes.review, arguments: _path),
               onReview: () =>
                   Navigator.of(context).pushNamed(AppRoutes.review)),
           AppRoutes.review: (context) => Scaffold(
@@ -111,8 +113,9 @@ class _BopomofoAppState extends State<BopomofoApp> {
                     title: Text(AppLocalizations.of(context)!.shellTitle)),
                 body: SafeArea(
                   child: ReviewPage(
-                      sessionFactory: widget.reviewSessionFactory ??
-                          widget.dependencies.createReviewSessionRuntime),
+                      sessionFactory: _sessionFactory(
+                        ModalRoute.of(context)?.settings.arguments,
+                      )),
                 ),
               ),
           AppRoutes.settings: (_) => SettingsPage(
@@ -164,13 +167,11 @@ class _BopomofoAppState extends State<BopomofoApp> {
             learningEngine: widget.dependencies.learningEngine,
             repository: widget.dependencies.repository),
         'lesson' => LessonPage(
-            learningEngine: widget.dependencies.learningEngine,
-            repository: widget.dependencies.repository,
             path: _path,
-            onReview: () => setState(() => _page = 'review')),
+            onPractice: () => _startShellReview(_path),
+            onReview: () => _startShellReview(null)),
         'review' => ReviewPage(
-            sessionFactory: widget.reviewSessionFactory ??
-                widget.dependencies.createReviewSessionRuntime,
+            sessionFactory: _sessionFactory(_reviewPath),
             onReturnToLearning: () => setState(() => _page = 'lesson')),
         'settings' => SettingsPage(
             localeController: widget.localeController,
@@ -204,7 +205,18 @@ class _BopomofoAppState extends State<BopomofoApp> {
         _navIndex = 0;
       });
 
-  void _selectNamedPath(BuildContext context, String path) {
+  ReviewSessionFactory _sessionFactory(Object? path) =>
+      widget.reviewSessionFactory ??
+      () => widget.dependencies.createReviewSessionRuntime(
+            path: path is LearningPath ? path : null,
+          );
+
+  void _startShellReview(LearningPath? path) => setState(() {
+        _reviewPath = path;
+        _page = 'review';
+      });
+
+  void _selectNamedPath(BuildContext context, LearningPath path) {
     setState(() {
       _path = path;
       _page = 'lesson';

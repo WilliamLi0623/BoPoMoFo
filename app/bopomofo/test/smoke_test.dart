@@ -22,7 +22,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('start-learning')));
     await tester.pump();
 
-    expect(find.text('Learning started'), findsOneWidget);
+    expect(find.text('Practise Pinyin to Zhuyin'), findsOneWidget);
     expect(find.text('Start Learning'), findsNothing);
   });
 }

@@ -21,6 +21,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
     show OAuthProvider, SupabaseClient;
 
 import 'app.dart';
+import 'features/lesson/learning_path.dart';
 import 'features/review/audio_asset_manifest.dart';
 import 'features/review/audio_prompt_player.dart';
 import 'features/review/review_page.dart';
@@ -224,16 +225,23 @@ class AppDependencies {
   final LearningEngine learningEngine;
   final AppLearningRepository repository;
 
-  Future<ReviewSessionRuntime> createReviewSessionRuntime() async {
-    final manifest = await AudioAssetManifest.load(rootBundle);
+  Future<ReviewSessionRuntime> createReviewSessionRuntime({
+    LearningPath? path,
+  }) async {
+    final manifest = await AudioAssetManifest.loadBundled(rootBundle);
+    final prompts = path == null
+        ? buildStarterQuestionBank(manifest)
+        : starterPromptsForPath(path, manifest);
     return ReviewSessionRuntime(
       coordinator: QuizSessionCoordinator(
-        store: repository,
+        store: path == null
+            ? repository
+            : repository.local.quizSessions(path.name),
         queueFactory: () async => nextPrompts(
           await repository.snapshot(),
           DateTime.now().toUtc(),
           10,
-          starterPrompts: buildStarterQuestionBank(manifest),
+          starterPrompts: prompts,
         ),
         newSessionId: () =>
             DateTime.now().toUtc().microsecondsSinceEpoch.toString(),
