@@ -28,6 +28,23 @@ const _syllableKeys = <String>[
   'ne',
   'ni',
   'nu',
+  // Course syllables added so the later lessons teach spelling for every
+  // zhuyin symbol (see LearningLesson examples in learning_path.dart).
+  'ta',
+  'te',
+  'he',
+  'ji',
+  'qi',
+  'xi',
+  'bai',
+  'bei',
+  'bao',
+  'dou',
+  'ban',
+  'ben',
+  'bang',
+  'deng',
+  'ye',
 ];
 
 List<String> _choices(String correct, Iterable<String> domain) {

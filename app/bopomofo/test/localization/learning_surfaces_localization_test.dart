@@ -113,6 +113,11 @@ void main() {
 
       expect(find.text(localized.lesson), findsOneWidget);
       expect(find.text('ba → ㄅㄚ'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text(localized.review),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.tap(find.text(localized.review));
       await tester.pumpAndSettle();
 

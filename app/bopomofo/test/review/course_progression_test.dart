@@ -19,16 +19,21 @@ void main() {
     final allScopes = <String>{};
     for (final path in LearningPath.values) {
       final lessons = lessonsForPath(path);
-      expect(lessons.map((lesson) => lesson.number), [1, 2, 3]);
+      expect(lessons.map((lesson) => lesson.number).toList(),
+          [for (var number = 1; number <= lessons.length; number++) number]);
+      expect(lessons.length, greaterThanOrEqualTo(3));
       expect(lessons.first.scope, path.name,
           reason: 'Preserve previous practice');
-      final ids = <String>{};
       for (final lesson in lessons) {
         expect(allScopes.add(lesson.scope), isTrue);
         final questions = starterPromptsForLesson(lesson, manifest);
         expect(questions.length, greaterThanOrEqualTo(2));
+        // Symbol-level prompts intentionally reappear across the lessons of
+        // one route as spaced rehearsal; uniqueness is per lesson session.
+        final ids = <String>{};
         for (final question in questions) {
-          expect(ids.add(question.id), isTrue);
+          expect(ids.add(question.id), isTrue,
+              reason: 'duplicate question id inside ${lesson.scope}');
           expect(question.evaluate(question.expectedAnswer), isTrue);
         }
         if (path == LearningPath.sounds) {
