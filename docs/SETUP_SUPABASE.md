@@ -52,6 +52,18 @@ or Supabase configuration.
 
 Validate redirect behavior separately for every target platform. This repository does not include production OAuth credentials, provider-console settings, or a deployed Supabase project.
 
+## Manual progress sync
+
+In Settings, **Sync now** sends pending local reviews and retrieves cloud
+events for the signed-in account. Guest mode keeps progress on the device.
+The app has one local learning profile, so the first sync associates that
+profile with the current account. Signing in to a different account does not
+transfer that local profile to it.
+
+The sync client needs the `learning_events` table and the owner-only select
+and insert policies from the repository migrations. No privileged key is
+needed for normal app sync.
+
 ## Account deletion
 
 The authenticated app calls `public.delete_own_account()`. It has no user-id argument: it derives the target from `auth.uid()` and deletes only that Auth identity. Cascading foreign keys remove the associated cloud rows. The client publishable key cannot invoke this function anonymously or for another user. Local data is independently controlled by the in-app confirmation.

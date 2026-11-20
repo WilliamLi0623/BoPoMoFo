@@ -17,7 +17,8 @@ import 'package:learning_engine/learning_engine.dart'
         nextPrompts;
 import 'package:sync/sync.dart' as sync;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show OAuthProvider;
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show OAuthProvider, SupabaseClient;
 
 import 'app.dart';
 import 'features/review/audio_asset_manifest.dart';
@@ -108,6 +109,7 @@ class AppLearningRepository implements LearningRepository, QuizSessionStore {
 
   @override
   Stream<DashboardSnapshot> watchDashboard() async* {
+    await _refresh();
     yield _dashboard;
     yield* _updates.stream;
   }
@@ -129,20 +131,6 @@ class AppLearningRepository implements LearningRepository, QuizSessionStore {
     await _updates.close();
     await local.close();
   }
-}
-
-class UnavailableSyncTransport implements sync.SyncTransport {
-  const UnavailableSyncTransport();
-
-  @override
-  Future<sync.UploadResult> upload(List<LearningEvent> events) =>
-      Future<sync.UploadResult>.error(
-          const sync.SyncTransportUnavailable('Cloud sync is not configured.'));
-
-  @override
-  Future<sync.DownloadResult> download({required sync.SyncCursor cursor}) =>
-      Future<sync.DownloadResult>.error(
-          const sync.SyncTransportUnavailable('Cloud sync is not configured.'));
 }
 
 Future<void> bootstrap() async {
@@ -264,24 +252,28 @@ class AppDependencies {
     GuestIdStore? guestStore,
     LocalRepositoryFactory? repositoryFactory,
   }) async {
-    final authService = await _authService(
+    final auth = await _authService(
       configuration,
       guestStore: guestStore,
     );
-    final userId = authService.currentUser?.id ?? 'local-user';
+    final userId = auth.service.currentUser?.id ?? 'local-user';
     final localRepository = repositoryFactory == null
         ? await _openPersistentRepository(userId)
         : await repositoryFactory(userId);
     final repository = AppLearningRepository(localRepository);
+    final client = auth.client;
     final syncService = sync.LocalSyncService(
       repository: repository.local,
-      transport: const UnavailableSyncTransport(),
+      cursorKey: sync.SupabaseSyncTransport.cursorKey,
+      resolveTransport: client == null
+          ? null
+          : () => sync.SupabaseSyncTransport.forRepository(client, localRepository),
     );
     final learningEngine = LearningEngine(repository);
 
     return AppDependencies(
       configuration: configuration,
-      authService: authService,
+      authService: auth.service,
       syncService: syncService,
       learningEngine: learningEngine,
       repository: repository,
@@ -299,7 +291,7 @@ class AppDependencies {
     return LocalLearningRepository(database: database, userId: userId);
   }
 
-  static Future<AuthService> _authService(
+  static Future<({AuthService service, SupabaseClient? client})> _authService(
     AppConfiguration configuration, {
     GuestIdStore? guestStore,
   }) async {
@@ -321,15 +313,16 @@ class AppDependencies {
               },
             )
           : null;
-      return SupabaseAuthService(
+      final service = SupabaseAuthService(
         configuration: authConfiguration,
         gateway: gateway,
         nativeGoogleSignIn: nativeGoogle?.signIn,
       );
+      return (service: service, client: gateway.client);
     } on AuthConfigurationError {
-      return _guestAuthService(guestStore);
+      return (service: await _guestAuthService(guestStore), client: null);
     } on Exception {
-      return _guestAuthService(guestStore);
+      return (service: await _guestAuthService(guestStore), client: null);
     }
   }
 

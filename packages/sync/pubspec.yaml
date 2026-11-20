@@ -7,11 +7,13 @@ environment:
 dependencies:
   domain:
     path: ../domain
+  http: ^1.5.0
   learning_engine:
     path: ../learning_engine
   persistence:
     path: ../persistence
   supabase_flutter: ^2.9.0
+  uuid: ^4.5.1
 
 dev_dependencies:
   srs:

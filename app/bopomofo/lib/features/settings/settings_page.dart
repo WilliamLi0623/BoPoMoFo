@@ -7,7 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../localization/app_locale_controller.dart';
 
 enum _SettingsStatus {
-  syncLocalOnly, syncPending, syncSynced, syncOffline, syncError,
+  syncLocalOnly, syncPending, syncSynced, syncOffline, syncAccountMismatch, syncError,
   signedOut, signOutFailed, signInStarted, signInComplete, signInCancelled, signInFailed,
   exportReady, exportFailed, importEmpty, importComplete, importFailed,
 }
@@ -49,6 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
           SyncStatus.pending => _SettingsStatus.syncPending,
           SyncStatus.synced => _SettingsStatus.syncSynced,
           SyncStatus.offline => _SettingsStatus.syncOffline,
+          SyncStatus.accountMismatch => _SettingsStatus.syncAccountMismatch,
           SyncStatus.error => _SettingsStatus.syncError,
         });
       }
@@ -117,10 +118,11 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final labels = AppLocalizations.of(context)!;
     final statusText = switch (_status) {
-      _SettingsStatus.syncLocalOnly => labels.progressSavedLocally,
+      _SettingsStatus.syncLocalOnly => labels.syncLocalOnly,
       _SettingsStatus.syncPending => labels.syncPending,
       _SettingsStatus.syncSynced => labels.syncComplete,
       _SettingsStatus.syncOffline => labels.syncOffline,
+      _SettingsStatus.syncAccountMismatch => labels.syncAccountMismatch,
       _SettingsStatus.syncError => labels.syncFailed,
       _SettingsStatus.signedOut => labels.signOutComplete,
       _SettingsStatus.signOutFailed => labels.signOutUnavailable,
