@@ -104,17 +104,20 @@ jobs:
           sha256sum "$apk" > "$apk.sha256"
           echo "ANDROID_RELEASE_APK=$GITHUB_WORKSPACE/app/bopomofo/$apk" >> "$GITHUB_ENV"
           echo "ANDROID_RELEASE_CHECKSUM=$GITHUB_WORKSPACE/app/bopomofo/$apk.sha256" >> "$GITHUB_ENV"
-      - name: Publish private GitHub pre-release
+      - name: Publish private GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+          # v1.x tags publish as stable releases; v0.x tags stay pre-releases.
+          major="${GITHUB_REF_NAME#v}"
+          major="${major%%.*}"
+          flags=(--verify-tag --title "BoPoMoFo $GITHUB_REF_NAME" --generate-notes)
+          if [[ "$major" == "0" ]]; then flags+=(--prerelease); fi
           gh release create "$GITHUB_REF_NAME" \
             "$ANDROID_RELEASE_APK" \
             "$ANDROID_RELEASE_CHECKSUM" \
-            --verify-tag \
-            --prerelease \
-            --title "BoPoMoFo $GITHUB_REF_NAME" \
-            --generate-notes
+            "${flags[@]}"
       - name: Remove signing key from runner
         if: always()
         run: rm -f app/bopomofo/android/app/upload-keystore.jks

@@ -2,6 +2,12 @@
 
 Last updated: 2026-11-21
 
+**Operator.** Bopomofo is operated by Xuanming Li (individual developer),
+Canada. Contact: xuanming.li0623@gmail.com.
+
+**Data location.** Cloud data for signed-in users is stored in the
+operator's Supabase project deployed in **Singapore (ap-northeast-1)**.
+
 Bopomofo is designed local-first. Learning works without an account or network connection. Review events and derived progress are stored in the app's local SQLite database. Signing in is optional; when a signed-in user enables cloud sync, the app sends learning events and sync metadata to the configured Supabase project.
 
 The app contains no analytics, telemetry, advertising, or crash reporting. Listening-exercise audio is bundled at build time from the Ministry of Digital Affairs' CNS11643 open-data archive; it is never fetched from the network and carries no personal data.
@@ -10,11 +16,26 @@ The app contains no analytics, telemetry, advertising, or crash reporting. Liste
 
 The service may process an authentication identifier and provider account attributes, profile display name/avatar when available, device identifier/platform/app version, learning events (item, skill, correctness, response, timing and hint/retry counts), derived review/confusion snapshots, user settings, and sync cursor/state. OAuth authentication is handled by the configured identity provider and Supabase Auth. The app does not request location, contacts, or advertising identifiers and does not include ad tracking.
 
-## Storage, sharing, and retention
+## Retention
 
-Local learning data remains on the device until the user clears app data or uninstalls the app. Cloud data is stored in the project operator's Supabase region and is accessible to the account owner through row-level security. The app does not sell learning data or use it for advertising. Operators with authorized database access may process it to operate, secure, troubleshoot, and improve the service.
+Local learning data remains on the device until the user clears app data or uninstalls the app. Cloud data is stored in the project operator's Supabase region (Singapore, ap-northeast-1) and is accessible to the account owner through row-level security. The app does not sell learning data or use it for advertising. Operators with authorized database access may process it to operate, secure, troubleshoot, and improve the service.
 
-Synced account data is retained until account deletion or project retention changes. Account deletion removes the Supabase Auth identity; database foreign-key cascades remove its profile, devices, learning events, snapshots, confusion data, settings, and sync state. Local data is separate and requires the explicit local-data option in the app. Backups may persist until the provider's backup-retention window expires.
+Synced account data is retained until account deletion or project retention changes. Account deletion removes the Supabase Auth identity; database foreign-key cascades remove its profile, devices, learning events, snapshots, confusion data, settings, and sync state. Local data is separate and requires the explicit local-data option in the app. Backups, if included in the Supabase plan, persist only for the retention window documented by Supabase for the plan, then are deleted.
+
+## Your rights
+
+**Canada (PIPEDA).** You may access your personal information, request
+corrections, and withdraw consent at any time. Signing out and deleting the
+account (Settings → Account → Delete account) exercises deletion; requests
+by email are answered within PIPEDA's timelines. You may complain to the
+Office of the Privacy Commissioner of Canada (opc.ca).
+
+**EU/UK visitors.** If you use the service from the EU/UK, you additionally
+have the rights of access, rectification, erasure, portability, and
+objection, and the right to lodge a complaint with a supervisory authority.
+The lawful basis for synced learning data is your consent, given when you
+sign in and enable sync; you can withdraw it by signing out or deleting the
+account.
 
 ## Your choices
 
@@ -22,6 +43,6 @@ You can use guest mode, export learning data, sign out, and request cloud-accoun
 
 ## Configuration and contact
 
-The account-deletion page lists xuanming.li0623@gmail.com as its support contact. Before publishing, the operator must still add its legal identity, Supabase region/retention details, and any jurisdiction-specific disclosures. OAuth providers receive data according to their own policies.
+The operator is Xuanming Li (individual developer), Canada; the account-deletion page and this notice list xuanming.li0623@gmail.com as the support contact. Cloud data is hosted in the Supabase Singapore region (ap-northeast-1). OAuth providers receive data according to their own policies.
 
 See [`SETUP_SUPABASE.md`](SETUP_SUPABASE.md) for self-hosted/project configuration. This notice describes the repository implementation, not a guarantee about a separately deployed instance.
