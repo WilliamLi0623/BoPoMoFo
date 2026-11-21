@@ -64,6 +64,20 @@ The sync client needs the `learning_events` table and the owner-only select
 and insert policies from the repository migrations. No privileged key is
 needed for normal app sync.
 
+### Verifying cross-device sync and the account binding
+
+With two devices signed in to the same account: answer one question on
+device A, run **Sync now** on A, then run **Sync now** on B and confirm the
+answer appears; a second sync on B must not duplicate anything. The binding
+semantics are covered by `packages/sync/test/connected_sync_test.dart`
+(guest stays local-only; a second account on a bound profile reports
+`accountMismatch` without transferring the profile). To exercise the
+mismatch on a real device you need a disposable second Google account:
+sign out, sign in with it, and confirm Settings reports the mismatch instead
+of showing the first account's progress. Verified on two Android emulators
+with one account (2026-11-20); the two-account mismatch path is currently
+unit-tested only.
+
 ## Account deletion
 
 The authenticated app calls `public.delete_own_account()`. It has no user-id argument: it derives the target from `auth.uid()` and deletes only that Auth identity. Cascading foreign keys remove the associated cloud rows. The client publishable key cannot invoke this function anonymously or for another user. Local data is independently controlled by the in-app confirmation.
