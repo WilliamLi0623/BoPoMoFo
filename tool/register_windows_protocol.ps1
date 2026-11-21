@@ -27,6 +27,6 @@ Set-ItemProperty -Path $key -Name '(Default)' -Value 'URL:Bopomofo'
 Set-ItemProperty -Path $key -Name 'URL Protocol' -Value ''
 Set-ItemProperty -Path "$key\shell\open\command" -Name '(Default)' -Value ('"{0}" "%1"' -f $resolved)
 
-Write-Host "Registered $scheme:// callback to: $resolved"
+Write-Host "Registered $($scheme):// callback to: $resolved"
 Write-Host 'Google sign-in in the app now returns through the browser. To undo, delete the registry key:'
 Write-Host "  Remove-Item -Recurse $key"
