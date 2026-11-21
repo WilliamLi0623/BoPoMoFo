@@ -7,12 +7,14 @@ CNS11643 Full Character Library.
 - Official release index: https://www.cns11643.gov.tw/opendata/release.txt
 - `Voice.zip` version listed in the release index: `20250113`
 - Archive entries in `female.zip`: `F_ba.mp3`, `F_ma.mp3`, `F_bi.mp3`,
-  `F_bu.mp3`, `F_da.mp3`, `F_na.mp3`
+  `F_bu.mp3`, `F_da.mp3`, `F_na.mp3`, `F_he.mp3,
+  `F_ta.mp3`, `F_ji.mp3`, `F_xi.mp3,
+  `F_bai.mp3`, `F_bao.mp3`
 - License: Government Open Data License, Version 1.0
 - License text: https://data.gov.tw/license
 
 The archive's pronunciation table maps these clips to `ㄅㄚ`, `ㄇㄚ`, `ㄅㄧ`,
-`ㄅㄨ`, `ㄉㄚ`, and `ㄋㄚ`, respectively. They are bundled unchanged for
+``ㄅㄨ``, ``ㄉㄚ``, ``ㄋㄚ``, ``ㄏㄜ``, ``ㄊㄚ``, ``ㄐㄧ``, ``ㄒㄧ``, ``ㄅㄞ``, and ``ㄅㄠ``, respectively. They are bundled unchanged for
 offline playback.
 
 Attribution for use of these clips:

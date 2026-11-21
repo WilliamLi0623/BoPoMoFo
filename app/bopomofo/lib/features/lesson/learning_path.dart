@@ -42,6 +42,9 @@ List<LearningLesson> lessonsForPath(LearningPath path) => switch (path) {
           LearningLesson(LearningPath.sounds, 1, ['ba', 'ma']),
           LearningLesson(LearningPath.sounds, 2, ['bi', 'bu']),
           LearningLesson(LearningPath.sounds, 3, ['da', 'na']),
+          LearningLesson(LearningPath.sounds, 4, ['he', 'ta']),
+          LearningLesson(LearningPath.sounds, 5, ['ji', 'xi']),
+          LearningLesson(LearningPath.sounds, 6, ['bai', 'bao']),
         ],
       LearningPath.beginner => const [
           LearningLesson(LearningPath.beginner, 1, ['ba', 'pa', 'ma', 'fa']),

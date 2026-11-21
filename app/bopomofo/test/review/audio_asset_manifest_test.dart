@@ -12,6 +12,8 @@ void main() {
     const verifiedMappings = {
       'ba': 'ㄅㄚ', 'ma': 'ㄇㄚ', 'bi': 'ㄅㄧ',
       'bu': 'ㄅㄨ', 'da': 'ㄉㄚ', 'na': 'ㄋㄚ',
+      'he': 'ㄏㄜ', 'ta': 'ㄊㄚ', 'ji': 'ㄐㄧ',
+      'xi': 'ㄒㄧ', 'bai': 'ㄅㄞ', 'bao': 'ㄅㄠ',
     };
     expect(entries, hasLength(verifiedMappings.length));
     expect(entries.map((entry) => entry.id).toSet(), hasLength(entries.length));
