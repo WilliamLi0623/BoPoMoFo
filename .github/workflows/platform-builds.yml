@@ -80,7 +80,9 @@ jobs:
           - os: [self-hosted, bopomofo-linux]
             target: android
             command: flutter build apk --debug $DART_DEFINES_ARG
-          - os: windows-latest
+          # windows-latest hosted jobs are blocked by the account's Actions
+          # spending limit; the self-hosted Windows runner keeps them green.
+          - os: [self-hosted, bopomofo-windows]
             target: windows
             command: flutter build windows --debug
     runs-on: ${{ matrix.os }}
