@@ -51,7 +51,9 @@ jobs:
           if-no-files-found: error
 
   windows:
-    runs-on: windows-latest
+    # Self-hosted Windows runner; windows-latest hosted jobs are blocked by
+    # the account's Actions spending limit.
+    runs-on: [self-hosted, bopomofo-windows]
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -64,17 +66,26 @@ jobs:
       - name: Resolve app
         working-directory: app/bopomofo
         run: flutter pub get
+      # Windows registers the OAuth callback via the shipped registry script,
+      # so sign-in can return to the app; bash comes from Git for Windows.
+      - name: Write dart defines
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_OAUTH_REDIRECT_URI: ${{ secrets.GOOGLE_OAUTH_REDIRECT_URI }}
+        run: bash tool/write_dart_defines.sh
       - name: Build Windows release
         working-directory: app/bopomofo
-        shell: pwsh
-        run: flutter build windows --release
+        shell: bash
+        run: flutter build windows --release ${DART_DEFINES_ARG:-}
       - name: Package Windows zip
         shell: pwsh
         run: |
           $stage = 'desktop-out'
           New-Item -ItemType Directory -Force $stage | Out-Null
           $zip = "$stage/BoPoMoFo-${{ inputs.version }}-windows-x64.zip"
-          Compress-Archive -Path 'app/bopomofo/build/windows/x64/runner/Release/*' -DestinationPath $zip
+          Compress-Archive -Path 'app/bopomofo/build/windows/x64/runner/Release/*','tool/register_windows_protocol.ps1' -DestinationPath $zip
           $hash = (Get-FileHash $zip -Algorithm SHA256).Hash
           "$hash  $(Split-Path -Leaf $zip)" | Out-File "$zip.sha256" -Encoding ascii
       - uses: actions/upload-artifact@v4

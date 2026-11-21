@@ -1,8 +1,10 @@
 # Privacy
 
-Last updated: 2026-09-23
+Last updated: 2026-11-21
 
 Bopomofo is designed local-first. Learning works without an account or network connection. Review events and derived progress are stored in the app's local SQLite database. Signing in is optional; when a signed-in user enables cloud sync, the app sends learning events and sync metadata to the configured Supabase project.
+
+The app contains no analytics, telemetry, advertising, or crash reporting. Listening-exercise audio is bundled at build time from the Ministry of Digital Affairs' CNS11643 open-data archive; it is never fetched from the network and carries no personal data.
 
 ## Data
 
