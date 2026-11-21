@@ -19,10 +19,11 @@ if (-not (Test-Path -LiteralPath $ExecutablePath)) {
 
 $scheme = 'io.github.williamli0623.bopomofo'
 $key = "HKCU:\Software\Classes\$scheme"
-$command = New-Item -Path "$key\shell\open\command" -Force
 $resolved = (Resolve-Path -LiteralPath $ExecutablePath).Path
 
+# Create the parent key first, then the shell\open\command subkey.
 New-Item -Path $key -Force | Out-Null
+New-Item -Path "$key\shell\open\command" -Force | Out-Null
 Set-ItemProperty -Path $key -Name '(Default)' -Value 'URL:Bopomofo'
 Set-ItemProperty -Path $key -Name 'URL Protocol' -Value ''
 Set-ItemProperty -Path "$key\shell\open\command" -Name '(Default)' -Value ('"{0}" "%1"' -f $resolved)
